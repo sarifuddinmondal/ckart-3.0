@@ -20,12 +20,12 @@
     <div class="sidebar">
         <h2>CKART Admin</h2>
         <a href="add_product.html">➕ Add Product</a>
+        <a href="product_list.html">📦 Product List</a>
         <a href="order_list.html">🛒 Order List</a>
-        <a href="index.html" target="_blank">🌐 View Site</a>
         <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
     <div class="main">
-        <h1>Dashboard Overview</h1>
+        <h1 id="welcomeText">Dashboard Overview</h1>
         <div class="card-grid">
             <div class="card"><h3>Total Products</h3><p id="p-count">0</p></div>
             <div class="card" style="border-top-color: #27ae60;"><h3>Orders</h3><p id="o-count">0</p></div>
@@ -37,7 +37,6 @@
         import { supabase } from './supabaseClient.js';
 
         async function loadStats() {
-            // ডাটাবেস থেকে কাউন্ট আনা
             const { count: pCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
             const { count: oCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
             const { count: cCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
@@ -52,12 +51,12 @@
             window.location.href = "A-login.html";
         };
 
-        // সেশন চেক: লগইন না থাকলে ঢুকতে দেবে না
         const checkUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
                 window.location.href = "A-login.html";
             } else {
+                document.getElementById('welcomeText').innerText = `স্বাগতম, অ্যাডমিন!`;
                 loadStats();
             }
         };
