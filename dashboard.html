@@ -66,18 +66,18 @@
         // ১. ড্যাশবোর্ডের ডাটা লোড করার ফাংশন
         async function loadStats() {
             try {
-                // ১. প্রোডাক্ট সংখ্যা গণনা
-                const { count: pCount } = await supabase
+                // প্রোডাক্ট সংখ্যা গণনা
+                const { count: pCount, error: pError } = await supabase
                     .from('products')
                     .select('*', { count: 'exact', head: true });
 
-                // ২. কাস্টমার সংখ্যা গণনা (profiles টেবিল থেকে)
-                const { count: cCount } = await supabase
+                // কাস্টমার সংখ্যা গণনা
+                const { count: cCount, error: cError } = await supabase
                     .from('profiles') 
                     .select('*', { count: 'exact', head: true });
 
-                // ৩. অর্ডার সংখ্যা গণনা (orders টেবিল থেকে)
-                const { count: oCount } = await supabase
+                // অর্ডার সংখ্যা গণনা
+                const { count: oCount, error: oError } = await supabase
                     .from('orders') 
                     .select('*', { count: 'exact', head: true });
 
@@ -85,6 +85,10 @@
                 document.getElementById('p-count').innerText = pCount || 0;
                 document.getElementById('c-count').innerText = cCount || 0;
                 document.getElementById('o-count').innerText = oCount || 0;
+
+                if(pError) console.error("Product Error:", pError);
+                if(cError) console.error("Profile Error:", cError);
+                if(oError) console.error("Order Error:", oError);
 
             } catch (err) {
                 console.error("Data Load Error:", err.message);
@@ -108,10 +112,8 @@
             const { data: { user } } = await supabase.auth.getUser();
             
             if (!user) {
-                // লগইন না থাকলে লগইন পেজে পাঠিয়ে দেবে
                 window.location.href = "A-login.html";
             } else {
-                // অ্যাডমিনের নাম দেখানো (ঐচ্ছিক)
                 document.getElementById('welcomeText').innerText = `স্বাগতম, অ্যাডমিন!`;
                 loadStats();
             }
