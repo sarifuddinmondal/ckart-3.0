@@ -4,134 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - CKART</title>
-    
     <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--primary-gradient);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 350px;
-            text-align: center;
-        }
-        h2 { color: #333; margin-bottom: 25px; }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            outline: none;
-        }
-        input:focus { border-color: #764ba2; }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #764ba2;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
-        button:hover { background: #667eea; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        .message { color: red; font-size: 14px; margin-top: 15px; min-height: 20px; font-weight: 500; }
+        :root { --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--primary-gradient); height: 100vh; margin: 0; display: flex; justify-content: center; align-items: center; }
+        .login-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 350px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #764ba2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .message { color: red; font-size: 14px; margin-top: 15px; }
+        #otp-section { display: none; }
     </style>
 </head>
 <body>
+    <div class="login-container">
+        <h2>অ্যাডমিন প্রবেশ</h2>
+        <div id="email-section">
+            <input type="email" id="email" placeholder="আপনার অ্যাডমিন ইমেইল" required>
+            <button id="sendOtpBtn">ওটিপি পাঠান</button>
+        </div>
+        <div id="otp-section">
+            <p style="font-size: 13px; color: #666;">ইমেইলে পাঠানো ৬ ডিজিটের কোডটি লিখুন</p>
+            <input type="text" id="otp-input" placeholder="######" maxlength="6">
+            <button id="verifyOtpBtn">ভেরিফাই ও লগইন</button>
+        </div>
+        <div id="message" class="message"></div>
+    </div>
 
-<div class="login-container">
-    <h2>অ্যাডমিন লগইন</h2>
-    <form id="loginForm">
-        <input type="email" id="email" placeholder="আপনার ইমেইল" required>
-        <input type="password" id="password" placeholder="পাসওয়ার্ড" required>
-        <button type="submit" id="loginBtn">প্রবেশ করুন</button>
-    </form>
-    <div id="message" class="message"></div>
-</div>
+    <script type="module">
+        import { supabase } from './supabaseClient.js';
 
-<script type="module">
-    // আপনার supabaseClient.js ইম্পোর্ট করা হচ্ছে
-    import { supabase } from './supabaseClient.js';
+        const emailInput = document.getElementById('email');
+        const otpInput = document.getElementById('otp-input');
+        const messageDiv = document.getElementById('message');
+        const emailSection = document.getElementById('email-section');
+        const otpSection = document.getElementById('otp-section');
 
-    const loginForm = document.getElementById('loginForm');
-    const messageDiv = document.getElementById('message');
-    const loginBtn = document.getElementById('loginBtn');
+        document.getElementById('sendOtpBtn').onclick = async () => {
+            const email = emailInput.value.trim();
+            if (!email) { messageDiv.innerText = "ইমেইল লিখুন!"; return; }
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value.trim();
-
-        // বাটন ও মেসেজ রিসেট
-        loginBtn.innerText = "যাচাই করা হচ্ছে...";
-        loginBtn.disabled = true;
-        messageDiv.innerText = "";
-        messageDiv.style.color = "red";
-
-        try {
-            // ১. Supabase Auth দিয়ে লগইন করার চেষ্টা
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithOtp({
                 email: email,
-                password: password,
+                options: { emailRedirectTo: window.location.origin + '/dashboard.html' }
             });
 
             if (error) {
-                loginBtn.innerText = "প্রবেশ করুন";
-                loginBtn.disabled = false;
-                
-                if (error.message.includes("Invalid login credentials")) {
-                    messageDiv.innerText = "ভুল ইমেইল অথবা পাসওয়ার্ড!";
-                } else if (error.message.includes("Email not confirmed")) {
-                    messageDiv.innerText = "আপনার ইমেইল ভেরিফাই করা হয়নি!";
-                } else {
-                    messageDiv.innerText = "ত্রুটি: " + error.message;
-                }
+                messageDiv.innerText = "এরর: " + error.message;
             } else {
-                // ২. অ্যাডমিন কিনা চেক করা (ঐচ্ছিক নিরাপত্তা)
-                // আপনি চাইলে আপনার ডাটাবেসের 'admins' টেবিলে এই ইমেইলটি আছে কিনা চেক করতে পারেন
-                
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "ওটিপি পাঠানো হয়েছে! জিমেইল চেক করুন।";
+                emailSection.style.display = "none";
+                otpSection.style.display = "block";
+            }
+        };
+
+        document.getElementById('verifyOtpBtn').onclick = async () => {
+            const email = emailInput.value.trim();
+            const token = otpInput.value.trim();
+            const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+
+            if (error) {
+                messageDiv.innerText = "ভুল ওটিপি!";
+            } else {
                 messageDiv.style.color = "green";
                 messageDiv.innerText = "লগইন সফল! প্রবেশ করা হচ্ছে...";
-                
-                // সফল হলে ড্যাশবোর্ডে নিয়ে যাওয়া
-                setTimeout(() => {
-                    window.location.href = "dashboard.html"; 
-                }, 1000);
+                setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
             }
-        } catch (err) {
-            loginBtn.innerText = "প্রবেশ করুন";
-            loginBtn.disabled = false;
-            messageDiv.innerText = "সিস্টেম এরর: " + err.message;
-        }
-    });
-
-    // সেশন চেক: যদি আগে থেকেই লগইন থাকে তবে সরাসরি ড্যাশবোর্ডে নিয়ে যাবে
-    window.onload = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            window.location.href = "dashboard.html";
-        }
-    };
-</script>
-
+        };
+    </script>
 </body>
 </html>
