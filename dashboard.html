@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CKART</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; }
+        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px; position: fixed; }
+        .sidebar h2 { color: #fff; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
+        .sidebar a { display: block; color: gold; text-decoration: none; padding: 15px; border-bottom: 1px solid #34495e; transition: 0.3s; }
+        .sidebar a:hover { background: #34495e; padding-left: 20px; }
+        
+        .main { flex: 1; padding: 40px; background: #f4f4f4; margin-left: 290px; min-height: 100vh; }
+        h1 { color: #2c3e50; margin-bottom: 30px; }
+        
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid #764ba2; }
+        .card h3 { margin: 0; color: #555; font-size: 18px; }
+        .card p { font-size: 32px; font-weight: bold; color: #2c3e50; margin: 15px 0 0 0; }
+        
+        .logout-btn { background: #ff4757; color: white; border: none; padding: 10px; width: 100%; margin-top: 20px; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>CKART Admin</h2>
+        <a href="add_product.html">➕ Add Product</a>
+        <a href="product_list.html">📦 Product List</a>
+        <a href="consumer_list.html">👥 Consumers</a>
+        <a href="order_list.html">🛒 Order List</a>
+        <a href="../index.html">🌐 View Site</a>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+
+    <div class="main">
+        <h1>Dashboard Overview</h1>
+        <div class="card-grid">
+            <div class="card">
+                <h3>Total Products</h3>
+                <p id="p-count">...</p>
+            </div>
+            <div class="card">
+                <h3>Total Orders</h3>
+                <p id="o-count">0</p>
+            </div>
+            <div class="card">
+                <h3>Total Customers</h3>
+                <p id="c-count">...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { supabase } from './supabaseClient.js';
+
+        // ১. ড্যাশবোর্ডের ডাটা লোড করার ফাংশন
+        async function loadStats() {
+            try {
+                // প্রোডাক্ট সংখ্যা গণনা
+                const { count: pCount, error: pError } = await supabase
+                    .from('products')
+                    .select('*', { count: 'exact', head: true });
+
+                // কাস্টমার সংখ্যা গণনা (আপনার টেবিল নাম অনুযায়ী profiles/users বদলে নিন)
+                const { count: cCount, error: cError } = await supabase
+                    .from('profiles') 
+                    .select('*', { count: 'exact', head: true });
+
+                if (pError) console.error("Product fetch error:", pError);
+                if (cError) console.error("Customer fetch error:", cError);
+
+                // স্ক্রিনে সংখ্যাগুলো বসানো
+                document.getElementById('p-count').innerText = pCount || 0;
+                document.getElementById('c-count').innerText = cCount || 0;
+
+            } catch (err) {
+                console.error("System Error:", err.message);
+            }
+        }
+
+        // ২. লগআউট লজিক
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            const { error } = await supabase.auth.signOut();
+            if (!error) {
+                window.location.href = "A-login.html";
+            } else {
+                alert("Logout failed: " + error.message);
+            }
+        });
+
+        // ৩. পেজ প্রোটেকশন (লগইন না থাকলে বের করে দেবে)
+        async function checkUser() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = "A-login.html";
+            } else {
+                loadStats();
+            }
+        }
+
+        checkUser();
+    </script>
+</body>
+</html>

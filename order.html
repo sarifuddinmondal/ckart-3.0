@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>Checkout - CKART</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .order-box { background: white; padding: 30px; border-radius: 15px; width: 100%; max-width: 450px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-confirm { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 8px; font-size: 16px; }
+        .order-id-display { font-size: 12px; color: #888; background: #eee; padding: 5px; border-radius: 5px; text-align: center; margin-bottom: 10px; }
+        .price-summary { background: #fff9e6; padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed #f1c40f; }
+    </style>
+</head>
+<body>
+
+<div class="order-box">
+    <h3>Confirm Your Order</h3>
+    <div id="order-id-label" class="order-id-display">Generating ID...</div>
+    
+    <div class="price-summary">
+        <div style="display:flex; justify-content:space-between;">
+            <span>Total Payable Amount:</span>
+            <strong id="display-total">₹0</strong>
+        </div>
+    </div>
+
+    <input type="text" id="cust-name" placeholder="Full Name" readonly>
+    <input type="tel" id="cust-phone" placeholder="Mobile Number 1">
+    <input type="tel" id="cust-phone2" placeholder="Mobile Number 2 (Optional)">
+    <input type="text" id="cust-addr" placeholder="Full Address (Village/Street)">
+    <input type="number" id="cust-pin" placeholder="PIN Code">
+    
+    <select id="cust-state">
+        <option>West Bengal</option>
+        <option>Delhi</option>
+        <option>Maharashtra</option>
+        <option>Karnataka</option>
+        <option>Other</option>
+    </select>
+    <input type="text" value="India" readonly>
+    <input type="text" id="cust-loc" placeholder="Live Location Link (Auto-load)">
+
+    <div style="margin: 15px 0; font-weight: bold; color: #27ae60;">Payment: Cash On Delivery (COD)</div>
+
+    <button class="btn-confirm" id="confirm-btn" onclick="placeOrder()">CONFIRM ORDER</button>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { firebaseConfig } from "./config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+
+    let cart = JSON.parse(localStorage.getItem('ckart_cart')) || [];
+    let totalPrice = cart.reduce((sum, item) => sum + Number(item.price), 0);
+    document.getElementById('display-total').innerText = "₹" + totalPrice;
+
+    // ১. অটোমেটিক ডাটা লোড (বারবার টাইপ করতে হবে না)
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            document.getElementById('cust-name').value = user.displayName || "Customer";
+            
+            // ডাটাবেস থেকে ইউজারের সেভ করা ফুল অ্যাড্রেস নিয়ে আসা
+            onValue(ref(db, 'users/' + user.uid + '/full_address'), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('cust-phone').value = data.phone1 || "";
+                    document.getElementById('cust-phone2').value = data.phone2 || "";
+                    document.getElementById('cust-addr').value = data.address || "";
+                    document.getElementById('cust-pin').value = data.pin || "";
+                    document.getElementById('cust-state').value = data.state || "West Bengal";
+                    document.getElementById('cust-loc').value = data.location || "";
+                }
+            });
+        } else {
+            alert("অর্ডার করতে আগে লগইন করুন!");
+            window.location.href = "login.html";
+        }
+    });
+
+    // ২. অটোমেটিক স্মার্ট অর্ডার আইডি (CK + Date + Time)
+    function generateOrderID() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB').replace(/\//g, ''); // 03022026
+        const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }).replace(/:/g, ''); // 2210
+        const ampm = now.getHours() >= 12 ? "PM" : "AM";
+        return "CK" + dateStr + timeStr + ampm;
+    }
+
+    const currentOrderID = generateOrderID();
+    document.getElementById('order-id-label').innerText = "Order ID: " + currentOrderID;
+
+    // ৩. ফায়ারবেসে অর্ডার কনফার্ম করা
+    window.placeOrder = function() {
+        const u = auth.currentUser;
+        const name = document.getElementById('cust-name').value;
+        const ph1 = document.getElementById('cust-phone').value;
+        const addr = document.getElementById('cust-addr').value;
+        const pin = document.getElementById('cust-pin').value;
+
+        if(!ph1 || !addr || !pin) return alert("অনুগ্রহ করে সব তথ্য দিন!");
+
+        const btn = document.getElementById('confirm-btn');
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        const orderData = {
+            order_id: currentOrderID,
+            customer_name: name,
+            customer_email: u.email, // স্ট্যাটাস দেখার জন্য এটি জরুরি
+            customer_phone: ph1,
+            customer_phone2: document.getElementById('cust-phone2').value,
+            address: `${addr}, PIN: ${pin}, State: ${document.getElementById('cust-state').value}`,
+            location_link: document.getElementById('cust-loc').value,
+            items: cart,
+            total_bill: totalPrice,
+            payment_type: "Cash On Delivery",
+            status: "Pending",
+            order_date: new Date().toISOString()
+        };
+
+        // ডাটাবেসে অর্ডার সেভ করা
+        set(ref(db, 'orders/' + currentOrderID), orderData).then(() => {
+            alert("অর্ডার সফল হয়েছে! আইডি: " + currentOrderID);
+            localStorage.removeItem('ckart_cart'); // কার্ট খালি করা
+            window.location.href = "index.html"; // হোম পেজে ফেরত যাওয়া
+        }).catch(err => {
+            alert("Error: " + err.message);
+            btn.disabled = false;
+            btn.innerText = "CONFIRM ORDER";
+        });
+    }
+</script>
+</body>
+</html>

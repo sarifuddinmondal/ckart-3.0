@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>Consumer List - CKART</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; text-align: center; border-bottom: 2px solid #ff4757; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background: #2c3e50; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .user-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+        .no-data { text-align: center; padding: 20px; color: #888; }
+        .loading { text-align: center; padding: 20px; color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>নিবন্ধিত কাস্টমার তালিকা (CKART)</h2>
+    <div id="loading-msg" class="loading">তথ্য লোড হচ্ছে...</div>
+    <table id="user-table" style="display:none;">
+        <thead>
+            <tr>
+                <th>ছবি</th>
+                <th>নাম</th>
+                <th>ইমেইল / ফোন</th>
+                <th>নিবন্ধনের সময়</th>
+            </tr>
+        </thead>
+        <tbody id="c-list">
+            </tbody>
+    </table>
+    <div id="empty-msg" class="no-data" style="display:none;">কোনো কাস্টমার পাওয়া যায়নি।</div>
+</div>
+
+<script type="module">
+    // আপনার তৈরি করা supabaseClient.js ইম্পোর্ট করা হচ্ছে
+    import { supabase } from './supabaseClient.js';
+
+    const listContainer = document.getElementById('c-list');
+    const emptyMsg = document.getElementById('empty-msg');
+    const loadingMsg = document.getElementById('loading-msg');
+    const userTable = document.getElementById('user-table');
+
+    async function fetchConsumers() {
+        try {
+            // Supabase এর 'profiles' টেবিল থেকে ডেটা আনা (টেবিল নাম আপনার অনুযায়ী বদলে নিতে পারেন)
+            const { data: users, error } = await supabase
+                .from('profiles') 
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            loadingMsg.style.display = "none";
+
+            if (error) throw error;
+
+            if (users && users.length > 0) {
+                userTable.style.display = "table";
+                emptyMsg.style.display = "none";
+                listContainer.innerHTML = "";
+
+                users.forEach(user => {
+                    // ডেটাবেসের কলাম নাম অনুযায়ী এগুলো চেক করুন
+                    const name = user.full_name || user.username || "অজানা কাস্টমার";
+                    const contact = user.email || user.phone || "তথ্য নেই";
+                    const photo = user.avatar_url || "https://via.placeholder.com/40";
+                    
+                    // সময় ফরম্যাট করা (Supabase এ সাধারণত created_at থাকে)
+                    const joinedAt = user.created_at 
+                        ? new Date(user.created_at).toLocaleString('bn-BD') 
+                        : "অজানা";
+
+                    listContainer.innerHTML += `
+                        <tr>
+                            <td><img src="${photo}" class="user-img" alt="Profile"></td>
+                            <td><strong>${name}</strong></td>
+                            <td>${contact}</td>
+                            <td><small>${joinedAt}</small></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                userTable.style.display = "none";
+                emptyMsg.style.display = "block";
+            }
+        } catch (error) {
+            console.error("Error fetching users:", error.message);
+            loadingMsg.innerText = "তথ্য আনতে সমস্যা হয়েছে: " + error.message;
+            loadingMsg.style.color = "red";
+        }
+    }
+
+    // পেজ লোড হলে ফাংশনটি রান হবে
+    fetchConsumers();
+</script>
+
+</body>
+</html>

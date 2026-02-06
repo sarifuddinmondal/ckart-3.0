@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - CKART</title>
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--primary-gradient);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 350px;
+            text-align: center;
+        }
+        h2 { color: #333; margin-bottom: 25px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background: #667eea; }
+        .message { color: red; font-size: 14px; margin-top: 15px; min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>অ্যাডমিন লগইন</h2>
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="আপনার ইমেইল" required>
+        <input type="password" id="password" placeholder="পাসওয়ার্ড" required>
+        <button type="submit" id="loginBtn">প্রবেশ করুন</button>
+    </form>
+    <div id="message" class="message"></div>
+</div>
+
+<script type="module">
+    // আপনার বানানো সুপাবেস কানেকশন ইম্পোর্ট করা হচ্ছে
+    import { supabase } from './supabaseClient.js';
+
+    const loginForm = document.getElementById('loginForm');
+    const messageDiv = document.getElementById('message');
+    const loginBtn = document.getElementById('loginBtn');
+
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        // বাটন ডিজেবল করা
+        loginBtn.innerText = "যাচাই করা হচ্ছে...";
+        loginBtn.disabled = true;
+        messageDiv.innerText = "";
+        messageDiv.style.color = "red";
+
+        try {
+            // Supabase Auth দিয়ে লগইন করার চেষ্টা
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                // এরর হ্যান্ডলিং
+                loginBtn.innerText = "প্রবেশ করুন";
+                loginBtn.disabled = false;
+                
+                if (error.message.includes("Invalid login credentials")) {
+                    messageDiv.innerText = "ভুল ইমেইল অথবা পাসওয়ার্ড!";
+                } else {
+                    messageDiv.innerText = "ত্রুটি: " + error.message;
+                }
+            } else {
+                // সফল হলে
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "লগইন সফল! রিডাইরেক্ট হচ্ছে...";
+                
+                // সফলভাবে লগইন হলে ১ সেকেন্ড পর ড্যাশবোর্ডে নিয়ে যাওয়া
+                setTimeout(() => {
+                    window.location.href = "dashboard.html"; 
+                }, 1000);
+            }
+        } catch (err) {
+            loginBtn.innerText = "প্রবেশ করুন";
+            loginBtn.disabled = false;
+            messageDiv.innerText = "সিস্টেম এরর: " + err.message;
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - CKART Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
+        h2 { text-align: center; color: #333; }
+        .form-group { margin-bottom: 15px; position: relative; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .image-container { display: flex; align-items: center; }
+        .camera-icon { margin-left: -35px; cursor: pointer; color: #007bff; font-size: 20px; z-index: 10; }
+        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button:hover { background: #218838; }
+        .status-msg { text-align: center; margin-top: 10px; font-size: 14px; color: blue; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Add New Product (Supabase)</h2>
+    <form id="productForm">
+        <div class="form-group">
+            <label>Product Name:</label>
+            <input type="text" id="productName" required>
+        </div>
+        <div class="form-group">
+            <label>Product Code (ID):</label>
+            <input type="text" id="productCode" required>
+        </div>
+        <div class="form-group">
+            <label>Category:</label>
+            <select id="category">
+                <option value="electronics">Electronics</option>
+                <option value="fashion">Fashion</option>
+                <option value="home">Home & Garden</option>
+                <option value="beauty">Beauty & Health</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Price (TK):</label>
+            <input type="number" id="price" required>
+        </div>
+        <div class="form-group">
+            <label>Image URL:</label>
+            <div class="image-container">
+                <input type="text" id="imageLink" placeholder="Upload or enter URL" required>
+                <label for="file-input">
+                    <i class="fas fa-camera camera-icon"></i>
+                </label>
+            </div>
+            <input id="file-input" type="file" accept="image/*" style="display: none;">
+        </div>
+        <div id="uploadStatus" class="status-msg"></div>
+        <button type="submit" id="submitBtn">Add Product</button>
+    </form>
+</div>
+
+<script type="module">
+    import { supabase } from './supabaseClient.js';
+
+    const fileInput = document.getElementById('file-input');
+    const imageLinkInput = document.getElementById('imageLink');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // সুপাবেস স্টোরেজে ইমেজ আপলোড লজিক
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        uploadStatus.innerText = "ইমেজ আপলোড হচ্ছে... অপেক্ষা করুন।";
+        uploadStatus.style.color = "blue";
+        imageLinkInput.value = "Uploading...";
+
+        try {
+            // ফাইলের একটি ইউনিক নাম তৈরি করা
+            const fileName = Date.now() + "_" + file.name;
+            const filePath = `product-images/${fileName}`;
+
+            // Supabase Storage-এ আপলোড (নিশ্চিত করুন 'products' নামে একটি পাবলিক বাকেট আছে)
+            const { data, error } = await supabase.storage
+                .from('products') 
+                .upload(filePath, file);
+
+            if (error) throw error;
+
+            // ইমেজের পাবলিক ইউআরএল পাওয়া
+            const { data: publicUrlData } = supabase.storage
+                .from('products')
+                .getPublicUrl(filePath);
+
+            const downloadURL = publicUrlData.publicUrl;
+
+            // লিঙ্কটি ইনপুট বক্সে বসানো
+            imageLinkInput.value = downloadURL;
+            uploadStatus.innerText = "আপলোড সফল হয়েছে!";
+            uploadStatus.style.color = "green";
+        } catch (error) {
+            console.error("Upload Error: ", error);
+            uploadStatus.innerText = "আপলোড ব্যর্থ হয়েছে: " + error.message;
+            uploadStatus.style.color = "red";
+            imageLinkInput.value = "";
+        }
+    });
+
+    // প্রোডাক্ট ডাটাবেসে সেভ করার লজিক
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        submitBtn.innerText = "সেভ হচ্ছে...";
+        submitBtn.disabled = true;
+
+        const productData = {
+            name: document.getElementById('productName').value,
+            code: document.getElementById('productCode').value,
+            category: document.getElementById('category').value,
+            price: parseFloat(document.getElementById('price').value),
+            image: document.getElementById('imageLink').value
+        };
+
+        try {
+            // 'products' টেবিলে ডাটা ইনসার্ট করা
+            const { data, error } = await supabase
+                .from('products')
+                .insert([productData]);
+
+            if (error) throw error;
+
+            alert("প্রোডাক্ট সফলভাবে যোগ করা হয়েছে!");
+            document.getElementById('productForm').reset();
+            uploadStatus.innerText = "";
+        } catch (error) {
+            console.error("Error adding product: ", error);
+            alert("প্রোডাক্ট যোগ করতে সমস্যা হয়েছে: " + error.message);
+        } finally {
+            submitBtn.innerText = "Add Product";
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consumer Login - CKART</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+        .logo { font-size: 30px; font-weight: bold; color: #ff4757; margin-bottom: 10px; }
+        h3 { color: #2f3542; margin-bottom: 30px; }
+        .btn-google { 
+            width: 100%; padding: 15px; background: white; color: #555; 
+            border: 1px solid #ddd; border-radius: 10px; font-weight: bold; 
+            cursor: pointer; font-size: 16px; display: flex; align-items: center; 
+            justify-content: center; gap: 12px; transition: 0.3s;
+        }
+        .btn-google:hover { background: #f8f9fa; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .msg { font-size: 12px; color: #888; margin-top: 25px; line-height: 1.5; }
+        .loading { font-size: 14px; color: #ff4757; display: none; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="logo">CKART</div>
+    <h3>Consumer Login</h3>
+    
+    <button id="googleLoginBtn" class="btn-google">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
+        Google দিয়ে লগইন করুন
+    </button>
+    <div id="loader" class="loading">অপেক্ষা করুন...</div>
+    
+    <div class="msg">
+        লগইন করলে আপনার নাম এবং ইমেইল আমাদের সিস্টেমে সংরক্ষিত হবে যাতে আপনি ভবিষ্যতে অর্ডার করতে পারেন।
+    </div>
+</div>
+
+<script type="module">
+    // আপনার তৈরি করা supabaseClient.js ইম্পোর্ট করা হচ্ছে
+    import { supabase } from './supabaseClient.js';
+
+    const loginBtn = document.getElementById('googleLoginBtn');
+    const loader = document.getElementById('loader');
+
+    // গুগল লগইন ফাংশন
+    async function loginWithGoogle() {
+        loader.style.display = "block";
+        loginBtn.disabled = true;
+
+        try {
+            // Supabase OAuth Login (Google)
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/index.html' // সফল হলে এখানে ফিরবে
+                }
+            });
+
+            if (error) throw error;
+
+        } catch (error) {
+            console.error("Login Error:", error.message);
+            alert("লগইন করতে সমস্যা হয়েছে: " + error.message);
+            loader.style.display = "none";
+            loginBtn.disabled = false;
+        }
+    }
+
+    // পেজ লোড হওয়ার পর ইউজারের তথ্য ডাটাবেসে সেভ করার লজিক
+    async function handleAuthState() {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+            // ইউজার লগইন করা থাকলে তার তথ্য 'profiles' টেবিলে আপডেট বা ইনসার্ট করা
+            const { error: upsertError } = await supabase
+                .from('profiles')
+                .upsert({
+                    id: user.id,
+                    full_name: user.user_metadata.full_name,
+                    email: user.email,
+                    avatar_url: user.user_metadata.avatar_url,
+                    updated_at: new Date()
+                });
+
+            if (!upsertError) {
+                console.log("প্রোফাইল আপডেট হয়েছে।");
+                // যদি আপনি লগইন পেজেই থাকেন, তবে হোম পেজে পাঠিয়ে দেবে
+                if (window.location.pathname.includes('login.html')) {
+                    window.location.href = "index.html";
+                }
+            }
+        }
+    }
+
+    loginBtn.addEventListener('click', loginWithGoogle);
+    
+    // পেজ লোড হওয়ার সাথে সাথে সেশন চেক করা
+    handleAuthState();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order List - CKART Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #2c3e50; --accent: #ff4757; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 30px; border-bottom: 3px solid var(--accent); display: inline-block; padding-bottom: 5px; }
+        
+        .order-card { 
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--accent);
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .customer-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .info-box i { color: var(--accent); width: 20px; }
+        
+        .product-list { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .product-item { display: flex; justify-content: space-between; font-size: 14px; padding: 5px 0; border-bottom: 1px dashed #ddd; }
+        .product-item:last-child { border: none; }
+        
+        .total-price { text-align: right; font-weight: bold; font-size: 18px; color: var(--success); margin-top: 10px; }
+        .status-badge { background: #f1c40f; color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+        
+        .no-orders { text-align: center; padding: 50px; color: #888; }
+        .delete-btn { background:none; border:none; color:red; cursor:pointer; font-size: 18px; }
+        @media (max-width: 600px) { .customer-info { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <center><h2>নতুন অর্ডার তালিকা</h2></center>
+    <div id="order-container">
+        <p style="text-align: center;">অর্ডার লোড হচ্ছে...</p>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supabaseClient.js';
+
+    const orderContainer = document.getElementById('order-container');
+
+    // সুপাবেস থেকে অর্ডার রিড করার ফাংশন
+    async function fetchOrders() {
+        const { data: orders, error } = await supabase
+            .from('orders')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching orders:', error.message);
+            orderContainer.innerHTML = `<p style="color:red; text-align:center;">অর্ডার লোড করতে সমস্যা হয়েছে।</p>`;
+            return;
+        }
+
+        renderOrders(orders);
+    }
+
+    // অর্ডার কার্ড রেন্ডার করা
+    function renderOrders(orders) {
+        orderContainer.innerHTML = "";
+        
+        if (orders && orders.length > 0) {
+            orders.forEach((order) => {
+                const orderId = order.id.toString();
+                
+                // প্রোডাক্ট লিস্ট তৈরি (সুপাবেসে এটি সাধারণত JSON ফরম্যাটে থাকে)
+                let itemsHtml = "";
+                const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                
+                if(items && Array.isArray(items)) {
+                    items.forEach(item => {
+                        itemsHtml += `
+                            <div class="product-item">
+                                <span>${item.name} (x${item.qty})</span>
+                                <span>TK ${item.price * item.qty}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                // কার্ড ডিজাইন
+                const card = `
+                    <div class="order-card" id="card-${orderId}">
+                        <div class="order-header">
+                            <span><strong>ID:</strong> #${orderId.slice(-6).toUpperCase()}</span>
+                            <span class="status-badge">${order.status || 'Pending'}</span>
+                            <button onclick="deleteOrder('${orderId}')" class="delete-btn"><i class="fas fa-trash"></i></button>
+                        </div>
+                        
+                        <div class="customer-info">
+                            <div class="info-box"><i class="fas fa-user"></i> ${order.customer_name}</div>
+                            <div class="info-box"><i class="fas fa-phone"></i> ${order.customer_phone}</div>
+                            <div class="info-box" style="grid-column: 1 / -1;"><i class="fas fa-map-marker-alt"></i> ${order.address}</div>
+                        </div>
+
+                        <div class="product-list">
+                            <strong>প্রোডাক্ট ডিটেইলস:</strong>
+                            ${itemsHtml}
+                        </div>
+
+                        <div class="total-price">মোট বিল: TK ${order.total_bill}</div>
+                        <div style="font-size: 11px; color: #999;">অর্ডার টাইম: ${new Date(order.created_at).toLocaleString('bn-BD')}</div>
+                    </div>
+                `;
+                orderContainer.innerHTML += card;
+            });
+        } else {
+            orderContainer.innerHTML = `<div class="no-orders"><i class="fas fa-box-open fa-3x"></i><p>এখনো কোনো অর্ডার আসেনি।</p></div>`;
+        }
+    }
+
+    // অর্ডার ডিলিট ফাংশন
+    window.deleteOrder = async function(id) {
+        if(confirm("অর্ডারটি মুছে ফেলতে চান?")) {
+            const { error } = await supabase
+                .from('orders')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                alert("ডিলিট করতে সমস্যা হয়েছে: " + error.message);
+            } else {
+                alert("অর্ডার সফলভাবে মুছে ফেলা হয়েছে।");
+                fetchOrders(); // লিস্ট রিফ্রেশ করা
+            }
+        }
+    }
+
+    // প্রথমে অর্ডারগুলো লোড করা
+    fetchOrders();
+
+    // রিয়েল-টাইম আপডেট (সুপাবেস রিয়েল-টাইম চ্যানেল)
+    supabase
+        .channel('public:orders')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+            fetchOrders();
+        })
+        .subscribe();
+</script>
+
+</body>
+</html>
