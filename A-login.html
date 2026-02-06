@@ -39,7 +39,6 @@
         const emailSection = document.getElementById('email-section');
         const otpSection = document.getElementById('otp-section');
 
-        // ১. ওটিপি পাঠানোর ফাংশন
         document.getElementById('sendOtpBtn').onclick = async () => {
             const email = emailInput.value.trim();
             if (!email) { messageDiv.innerText = "ইমেইল লিখুন!"; return; }
@@ -57,17 +56,15 @@
                 messageDiv.innerText = "ত্রুটি: " + error.message;
             } else {
                 messageDiv.style.color = "green";
-                messageDiv.innerText = "আপনার জিমেইল চেক করুন!";
+                messageDiv.innerText = "জিমেইল চেক করুন!";
                 emailSection.style.display = "none";
                 otpSection.style.display = "block";
             }
         };
 
-        // ২. ওটিপি ভেরিফাই করার ফাংশন
         document.getElementById('verifyOtpBtn').onclick = async () => {
             const email = emailInput.value.trim();
             const token = otpInput.value.trim();
-            
             const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
 
             if (error) {
