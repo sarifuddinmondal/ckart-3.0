@@ -4,78 +4,155 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - CKART</title>
+    
     <style>
-        :root { --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--primary-gradient); height: 100vh; margin: 0; display: flex; justify-content: center; align-items: center; }
-        .login-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 350px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; outline: none; }
-        button { width: 100%; padding: 12px; background: #764ba2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--primary-gradient);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 350px;
+            text-align: center;
+        }
+
+        h2 { color: #333; margin-bottom: 25px; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus { border-color: #764ba2; }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
         button:hover { background: #667eea; }
-        .message { color: red; font-size: 14px; margin-top: 15px; min-height: 20px; font-weight: 500; }
-        #otp-section { display: none; }
+        
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        .message {
+            color: #ff4757;
+            font-size: 14px;
+            margin-top: 15px;
+            min-height: 20px;
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #764ba2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+
     <div class="login-container">
-        <h2>অ্যাডমিন লগইন</h2>
-        <div id="email-section">
-            <input type="email" id="email" placeholder="আপনার অ্যাডমিন ইমেইল" required>
-            <button id="sendOtpBtn">ওটিপি পাঠান</button>
-        </div>
-        <div id="otp-section">
-            <p style="font-size: 13px; color: #666;">ইমেইলে পাঠানো ৬ ডিজিটের কোডটি লিখুন</p>
-            <input type="text" id="otp-input" placeholder="######" maxlength="6">
-            <button id="verifyOtpBtn">ভেরিফাই ও লগইন</button>
-        </div>
+        <h2>CKART অ্যাডমিন</h2>
+        <input type="email" id="email" placeholder="ইমেইল অ্যাড্রেস" required>
+        <input type="password" id="password" placeholder="পাসওয়ার্ড" required>
+        
+        <div id="loader" class="loader"></div>
+        <button id="loginBtn">প্রবেশ করুন</button>
+        
         <div id="message" class="message"></div>
     </div>
 
     <script type="module">
+        // supabaseClient.js থেকে সুপাবেস কানেকশন ইম্পোর্ট করা
         import { supabase } from './supabaseClient.js';
 
-        const emailInput = document.getElementById('email');
-        const otpInput = document.getElementById('otp-input');
+        const loginBtn = document.getElementById('loginBtn');
         const messageDiv = document.getElementById('message');
-        const emailSection = document.getElementById('email-section');
-        const otpSection = document.getElementById('otp-section');
+        const loader = document.getElementById('loader');
 
-        document.getElementById('sendOtpBtn').onclick = async () => {
-            const email = emailInput.value.trim();
-            if (!email) { messageDiv.innerText = "ইমেইল লিখুন!"; return; }
+        loginBtn.addEventListener('click', async () => {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
 
-            messageDiv.style.color = "blue";
-            messageDiv.innerText = "ওটিপি পাঠানো হচ্ছে...";
-
-            const { error } = await supabase.auth.signInWithOtp({
-                email: email,
-                options: { emailRedirectTo: window.location.origin + '/dashboard.html' }
-            });
-
-            if (error) {
-                messageDiv.style.color = "red";
-                messageDiv.innerText = "ত্রুটি: " + error.message;
-            } else {
-                messageDiv.style.color = "green";
-                messageDiv.innerText = "জিমেইল চেক করুন!";
-                emailSection.style.display = "none";
-                otpSection.style.display = "block";
+            // খালি ঘর চেক করা
+            if (!email || !password) {
+                messageDiv.innerText = "ইমেইল এবং পাসওয়ার্ড উভয়ই প্রদান করুন।";
+                return;
             }
-        };
 
-        document.getElementById('verifyOtpBtn').onclick = async () => {
-            const email = emailInput.value.trim();
-            const token = otpInput.value.trim();
-            const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+            // বাটন ডিজেবল ও লোডার চালু
+            loginBtn.disabled = true;
+            loginBtn.innerText = "যাচাই করা হচ্ছে...";
+            loader.style.display = "block";
+            messageDiv.innerText = "";
 
-            if (error) {
-                messageDiv.style.color = "red";
-                messageDiv.innerText = "ভুল ওটিপি!";
-            } else {
+            try {
+                // সুপাবেস অথেন্টিকেশন
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                // সফল লগইন
                 messageDiv.style.color = "green";
-                messageDiv.innerText = "সফল! ড্যাশবোর্ডে নিয়ে যাওয়া হচ্ছে...";
-                setTimeout(() => { window.location.href = "dashboard.html"; }, 1000);
+                messageDiv.innerText = "লগইন সফল! ড্যাশবোর্ডে নিয়ে যাওয়া হচ্ছে...";
+                
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 1000);
+
+            } catch (error) {
+                // এরর মেসেজ দেখানো
+                messageDiv.style.color = "red";
+                if (error.message.includes("Invalid login credentials")) {
+                    messageDiv.innerText = "ভুল ইমেইল অথবা পাসওয়ার্ড!";
+                } else {
+                    messageDiv.innerText = "ত্রুটি: " + error.message;
+                }
+                
+                loginBtn.disabled = false;
+                loginBtn.innerText = "প্রবেশ করুন";
+                loader.style.display = "none";
             }
-        };
+        });
     </script>
 </body>
 </html>
