@@ -34,7 +34,9 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             box-sizing: border-box;
+            outline: none;
         }
+        input:focus { border-color: #764ba2; }
         button {
             width: 100%;
             padding: 12px;
@@ -46,9 +48,11 @@
             font-size: 16px;
             font-weight: bold;
             transition: 0.3s;
+            margin-top: 10px;
         }
         button:hover { background: #667eea; }
-        .message { color: red; font-size: 14px; margin-top: 15px; min-height: 20px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .message { color: red; font-size: 14px; margin-top: 15px; min-height: 20px; font-weight: 500; }
     </style>
 </head>
 <body>
@@ -64,7 +68,7 @@
 </div>
 
 <script type="module">
-    // আপনার বানানো সুপাবেস কানেকশন ইম্পোর্ট করা হচ্ছে
+    // আপনার supabaseClient.js ইম্পোর্ট করা হচ্ছে
     import { supabase } from './supabaseClient.js';
 
     const loginForm = document.getElementById('loginForm');
@@ -77,35 +81,38 @@
         const email = document.getElementById('email').value.trim();
         const password = document.getElementById('password').value.trim();
 
-        // বাটন ডিজেবল করা
+        // বাটন ও মেসেজ রিসেট
         loginBtn.innerText = "যাচাই করা হচ্ছে...";
         loginBtn.disabled = true;
         messageDiv.innerText = "";
         messageDiv.style.color = "red";
 
         try {
-            // Supabase Auth দিয়ে লগইন করার চেষ্টা
+            // ১. Supabase Auth দিয়ে লগইন করার চেষ্টা
             const { data, error } = await supabase.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
 
             if (error) {
-                // এরর হ্যান্ডলিং
                 loginBtn.innerText = "প্রবেশ করুন";
                 loginBtn.disabled = false;
                 
                 if (error.message.includes("Invalid login credentials")) {
                     messageDiv.innerText = "ভুল ইমেইল অথবা পাসওয়ার্ড!";
+                } else if (error.message.includes("Email not confirmed")) {
+                    messageDiv.innerText = "আপনার ইমেইল ভেরিফাই করা হয়নি!";
                 } else {
                     messageDiv.innerText = "ত্রুটি: " + error.message;
                 }
             } else {
-                // সফল হলে
-                messageDiv.style.color = "green";
-                messageDiv.innerText = "লগইন সফল! রিডাইরেক্ট হচ্ছে...";
+                // ২. অ্যাডমিন কিনা চেক করা (ঐচ্ছিক নিরাপত্তা)
+                // আপনি চাইলে আপনার ডাটাবেসের 'admins' টেবিলে এই ইমেইলটি আছে কিনা চেক করতে পারেন
                 
-                // সফলভাবে লগইন হলে ১ সেকেন্ড পর ড্যাশবোর্ডে নিয়ে যাওয়া
+                messageDiv.style.color = "green";
+                messageDiv.innerText = "লগইন সফল! প্রবেশ করা হচ্ছে...";
+                
+                // সফল হলে ড্যাশবোর্ডে নিয়ে যাওয়া
                 setTimeout(() => {
                     window.location.href = "dashboard.html"; 
                 }, 1000);
@@ -116,6 +123,14 @@
             messageDiv.innerText = "সিস্টেম এরর: " + err.message;
         }
     });
+
+    // সেশন চেক: যদি আগে থেকেই লগইন থাকে তবে সরাসরি ড্যাশবোর্ডে নিয়ে যাবে
+    window.onload = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            window.location.href = "dashboard.html";
+        }
+    };
 </script>
 
 </body>
