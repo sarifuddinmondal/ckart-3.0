@@ -5,21 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - CKART</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; }
-        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px; position: fixed; }
-        .sidebar h2 { color: #fff; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
-        .sidebar a { display: block; color: gold; text-decoration: none; padding: 15px; border-bottom: 1px solid #34495e; transition: 0.3s; }
-        .sidebar a:hover { background: #34495e; padding-left: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; background: #f4f4f4; }
         
-        .main { flex: 1; padding: 40px; background: #f4f4f4; margin-left: 290px; min-height: 100vh; }
-        h1 { color: #2c3e50; margin-bottom: 30px; }
+        /* Sidebar */
+        .sidebar { width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px; position: fixed; box-sizing: border-box; }
+        .sidebar h2 { color: #fff; border-bottom: 2px solid #34495e; padding-bottom: 10px; font-size: 22px; text-align: center; }
+        .sidebar a { display: block; color: #ecf0f1; text-decoration: none; padding: 15px; border-bottom: 1px solid #34495e; transition: 0.3s; font-weight: 500; }
+        .sidebar a:hover { background: #34495e; padding-left: 25px; color: gold; }
         
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid #764ba2; }
-        .card h3 { margin: 0; color: #555; font-size: 18px; }
-        .card p { font-size: 32px; font-weight: bold; color: #2c3e50; margin: 15px 0 0 0; }
+        /* Main Content */
+        .main { flex: 1; padding: 40px; margin-left: 250px; min-height: 100vh; box-sizing: border-box; }
+        h1 { color: #2c3e50; margin-bottom: 30px; font-size: 28px; }
         
-        .logout-btn { background: #ff4757; color: white; border: none; padding: 10px; width: 100%; margin-top: 20px; cursor: pointer; border-radius: 5px; }
+        /* Stats Cards */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; }
+        .card { background: white; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid #764ba2; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); }
+        .card h3 { margin: 0; color: #666; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+        .card p { font-size: 36px; font-weight: bold; color: #2c3e50; margin: 15px 0 0 0; }
+        
+        .logout-btn { background: #ff4757; color: white; border: none; padding: 12px; width: 100%; margin-top: 30px; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .logout-btn:hover { background: #e84118; }
+
+        /* Loader */
+        .loading-text { font-size: 14px; color: #888; }
     </style>
 </head>
 <body>
@@ -29,24 +38,24 @@
         <a href="product_list.html">📦 Product List</a>
         <a href="consumer_list.html">👥 Consumers</a>
         <a href="order_list.html">🛒 Order List</a>
-        <a href="../index.html">🌐 View Site</a>
+        <a href="index.html" target="_blank">🌐 View Site</a>
         <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
 
     <div class="main">
-        <h1>Dashboard Overview</h1>
+        <h1 id="welcomeText">Dashboard Overview</h1>
         <div class="card-grid">
             <div class="card">
                 <h3>Total Products</h3>
-                <p id="p-count">...</p>
+                <p id="p-count" class="loading-text">Loading...</p>
             </div>
-            <div class="card">
+            <div class="card" style="border-top-color: #27ae60;">
                 <h3>Total Orders</h3>
-                <p id="o-count">0</p>
+                <p id="o-count" class="loading-text">Loading...</p>
             </div>
-            <div class="card">
+            <div class="card" style="border-top-color: #2980b9;">
                 <h3>Total Customers</h3>
-                <p id="c-count">...</p>
+                <p id="c-count" class="loading-text">Loading...</p>
             </div>
         </div>
     </div>
@@ -57,49 +66,58 @@
         // ১. ড্যাশবোর্ডের ডাটা লোড করার ফাংশন
         async function loadStats() {
             try {
-                // প্রোডাক্ট সংখ্যা গণনা
-                const { count: pCount, error: pError } = await supabase
+                // ১. প্রোডাক্ট সংখ্যা গণনা
+                const { count: pCount } = await supabase
                     .from('products')
                     .select('*', { count: 'exact', head: true });
 
-                // কাস্টমার সংখ্যা গণনা (আপনার টেবিল নাম অনুযায়ী profiles/users বদলে নিন)
-                const { count: cCount, error: cError } = await supabase
+                // ২. কাস্টমার সংখ্যা গণনা (profiles টেবিল থেকে)
+                const { count: cCount } = await supabase
                     .from('profiles') 
                     .select('*', { count: 'exact', head: true });
 
-                if (pError) console.error("Product fetch error:", pError);
-                if (cError) console.error("Customer fetch error:", cError);
+                // ৩. অর্ডার সংখ্যা গণনা (orders টেবিল থেকে)
+                const { count: oCount } = await supabase
+                    .from('orders') 
+                    .select('*', { count: 'exact', head: true });
 
-                // স্ক্রিনে সংখ্যাগুলো বসানো
+                // স্ক্রিনে ডাটা আপডেট করা
                 document.getElementById('p-count').innerText = pCount || 0;
                 document.getElementById('c-count').innerText = cCount || 0;
+                document.getElementById('o-count').innerText = oCount || 0;
 
             } catch (err) {
-                console.error("System Error:", err.message);
+                console.error("Data Load Error:", err.message);
             }
         }
 
         // ২. লগআউট লজিক
         document.getElementById('logoutBtn').addEventListener('click', async () => {
-            const { error } = await supabase.auth.signOut();
-            if (!error) {
-                window.location.href = "A-login.html";
-            } else {
-                alert("Logout failed: " + error.message);
+            if (confirm("আপনি কি নিশ্চিতভাবে লগআউট করতে চান?")) {
+                const { error } = await supabase.auth.signOut();
+                if (!error) {
+                    window.location.href = "A-login.html";
+                } else {
+                    alert("লগআউট করা যাচ্ছে না: " + error.message);
+                }
             }
         });
 
-        // ৩. পেজ প্রোটেকশন (লগইন না থাকলে বের করে দেবে)
-        async function checkUser() {
+        // ৩. পেজ প্রোটেকশন ও ইউজার চেক
+        async function initDashboard() {
             const { data: { user } } = await supabase.auth.getUser();
+            
             if (!user) {
+                // লগইন না থাকলে লগইন পেজে পাঠিয়ে দেবে
                 window.location.href = "A-login.html";
             } else {
+                // অ্যাডমিনের নাম দেখানো (ঐচ্ছিক)
+                document.getElementById('welcomeText').innerText = `স্বাগতম, অ্যাডমিন!`;
                 loadStats();
             }
         }
 
-        checkUser();
+        initDashboard();
     </script>
 </body>
 </html>
