@@ -6,140 +6,215 @@
     <title>Add Product - CKART Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
-        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: auto; }
-        h2 { text-align: center; color: #333; }
-        .form-group { margin-bottom: 15px; position: relative; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        .image-container { display: flex; align-items: center; }
-        .camera-icon { margin-left: -35px; cursor: pointer; color: #007bff; font-size: 20px; z-index: 10; }
-        button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        button:hover { background: #218838; }
-        .status-msg { text-align: center; margin-top: 10px; font-size: 14px; color: blue; }
+        :root { --primary: #764ba2; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; padding: 20px; }
+        .form-container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); width: 100%; max-width: 600px; }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .cat-flex { display: flex; gap: 10px; }
+        .add-btn { background: var(--primary); color: white; border: none; padding: 0 15px; border-radius: 6px; cursor: pointer; }
+
+        .image-upload-section { border: 2px dashed #ddd; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .image-upload-section:hover { border-color: var(--primary); }
+        .preview-img { max-width: 100px; margin-top: 10px; display: none; border-radius: 5px; }
+
+        .submit-btn { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .submit-btn:hover { background: #219150; }
+
+        /* Modal Style */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 10px; width: 300px; text-align: center; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>Add New Product (Supabase)</h2>
-    <form id="productForm">
+<div class="form-container">
+    <h2>➕ নতুন প্রোডাক্ট যোগ করুন</h2>
+    
+    <div class="form-group">
+        <label>ক্যাটাগরি</label>
+        <div class="cat-flex">
+            <select id="category" tabindex="1">
+                <option value="Body Care">Body Care</option>
+                <option value="Cosmetic">Cosmetic</option>
+                <option value="Face Care">Face Care</option>
+                <option value="Hair Care">Hair Care</option>
+                <option value="Color Cosmetic">Color Cosmetic</option>
+                <option value="Personal Care">Personal Care</option>
+                <option value="Nail Care">Nail Care</option>
+                <option value="Beauty Tools">Beauty Tools</option>
+                <option value="Skin Care">Skin Care</option>
+                <option value="Others">Others</option>
+            </select>
+            <button class="add-btn" type="button" onclick="openModal()" tabindex="2">Add</button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>প্রোডাক্টের নাম</label>
+        <input type="text" id="pName" placeholder="সম্পূর্ণ নাম লিখুন" tabindex="3" required>
+    </div>
+
+    <div class="row">
         <div class="form-group">
-            <label>Product Name:</label>
-            <input type="text" id="productName" required>
+            <label>MRP (₹)</label>
+            <input type="number" id="mrp" placeholder="0.00" tabindex="4" required>
         </div>
         <div class="form-group">
-            <label>Product Code (ID):</label>
-            <input type="text" id="productCode" required>
+            <label>ডিসকাউন্ট (%)</label>
+            <input type="number" id="discount" placeholder="0" tabindex="5">
+        </div>
+    </div>
+    <div class="form-group">
+        <label>স্টক (Quantity)</label>
+        <input type="number" id="stock" placeholder="কত পিস আছে?" tabindex="6" required>
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label>পরিমাণ (Value)</label>
+            <input type="number" id="qtyVal" placeholder="উদা: ১০০" tabindex="7">
         </div>
         <div class="form-group">
-            <label>Category:</label>
-            <select id="category">
-                <option value="electronics">Electronics</option>
-                <option value="fashion">Fashion</option>
-                <option value="home">Home & Garden</option>
-                <option value="beauty">Beauty & Health</option>
+            <label>ইউনিট</label>
+            <select id="unit" tabindex="8">
+                <option value="ml">ml</option>
+                <option value="qty">qty/pcs</option>
+                <option value="g">g</option>
+                <option value="combo">combo</option>
             </select>
         </div>
-        <div class="form-group">
-            <label>Price (TK):</label>
-            <input type="number" id="price" required>
+    </div>
+
+    <div class="form-group">
+        <label>ওয়েব ইমেজ লিঙ্ক (ঐচ্ছিক)</label>
+        <input type="url" id="webLink" placeholder="https://..." tabindex="9">
+    </div>
+    <div class="image-upload-section" onclick="document.getElementById('fileInput').click()" tabindex="10">
+        <i class="fas fa-camera fa-2x"></i>
+        <p>ক্লিক করে ছবি আপলোড করুন</p>
+        <input type="file" id="fileInput" hidden accept="image/*" onchange="previewImage(this)">
+        <img id="imgPreview" class="preview-img">
+    </div>
+
+    <button class="submit-btn" id="submitBtn" tabindex="11">OK / সাবমিট করুন</button>
+</div>
+
+<div id="catModal" class="modal">
+    <div class="modal-content">
+        <h3>নতুন ক্যাটাগরি</h3>
+        <input type="text" id="newCatName" placeholder="ক্যাটাগরির নাম">
+        <div class="cat-flex" style="margin-top:15px; justify-content:center;">
+            <button class="add-btn" onclick="addCategory()">OK</button>
+            <button class="add-btn" style="background:#888;" onclick="closeModal()">Cancel</button>
         </div>
-        <div class="form-group">
-            <label>Image URL:</label>
-            <div class="image-container">
-                <input type="text" id="imageLink" placeholder="Upload or enter URL" required>
-                <label for="file-input">
-                    <i class="fas fa-camera camera-icon"></i>
-                </label>
-            </div>
-            <input id="file-input" type="file" accept="image/*" style="display: none;">
-        </div>
-        <div id="uploadStatus" class="status-msg"></div>
-        <button type="submit" id="submitBtn">Add Product</button>
-    </form>
+    </div>
 </div>
 
 <script type="module">
     import { supabase } from './supabaseClient.js';
 
-    const fileInput = document.getElementById('file-input');
-    const imageLinkInput = document.getElementById('imageLink');
-    const uploadStatus = document.getElementById('uploadStatus');
-    const submitBtn = document.getElementById('submitBtn');
+    // ১. মোডাল কন্ট্রোল
+    window.openModal = () => document.getElementById('catModal').style.display = 'flex';
+    window.closeModal = () => document.getElementById('catModal').style.display = 'none';
 
-    // সুপাবেস স্টোরেজে ইমেজ আপলোড লজিক
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        uploadStatus.innerText = "ইমেজ আপলোড হচ্ছে... অপেক্ষা করুন।";
-        uploadStatus.style.color = "blue";
-        imageLinkInput.value = "Uploading...";
-
-        try {
-            // ফাইলের একটি ইউনিক নাম তৈরি করা
-            const fileName = Date.now() + "_" + file.name;
-            const filePath = `product-images/${fileName}`;
-
-            // Supabase Storage-এ আপলোড (নিশ্চিত করুন 'products' নামে একটি পাবলিক বাকেট আছে)
-            const { data, error } = await supabase.storage
-                .from('products') 
-                .upload(filePath, file);
-
-            if (error) throw error;
-
-            // ইমেজের পাবলিক ইউআরএল পাওয়া
-            const { data: publicUrlData } = supabase.storage
-                .from('products')
-                .getPublicUrl(filePath);
-
-            const downloadURL = publicUrlData.publicUrl;
-
-            // লিঙ্কটি ইনপুট বক্সে বসানো
-            imageLinkInput.value = downloadURL;
-            uploadStatus.innerText = "আপলোড সফল হয়েছে!";
-            uploadStatus.style.color = "green";
-        } catch (error) {
-            console.error("Upload Error: ", error);
-            uploadStatus.innerText = "আপলোড ব্যর্থ হয়েছে: " + error.message;
-            uploadStatus.style.color = "red";
-            imageLinkInput.value = "";
+    // ২. নতুন ক্যাটাগরি যোগ (Dynamic)
+    window.addCategory = () => {
+        const name = document.getElementById('newCatName').value.trim();
+        if(name) {
+            const select = document.getElementById('category');
+            const option = new Option(name, name);
+            select.add(option, select.firstChild);
+            select.value = name;
+            closeModal();
+            document.getElementById('newCatName').value = "";
         }
-    });
+    };
 
-    // প্রোডাক্ট ডাটাবেসে সেভ করার লজিক
-    document.getElementById('productForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // ৩. ইমেজ প্রিভিউ
+    window.previewImage = (input) => {
+        const preview = document.getElementById('imgPreview');
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    };
+
+    // ৪. মেইন সাবমিশন
+    document.getElementById('submitBtn').onclick = async () => {
+        const btn = document.getElementById('submitBtn');
+        const file = document.getElementById('fileInput').files[0];
+        const webLink = document.getElementById('webLink').value;
         
-        submitBtn.innerText = "সেভ হচ্ছে...";
-        submitBtn.disabled = true;
+        btn.disabled = true;
+        btn.innerText = "সেভ হচ্ছে...";
 
+        let finalImageUrl = webLink;
+
+        // ফাইল আপলোড লজিক (সুপাবেস স্টোরেজ)
+        if(file) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = file.name.split('.')[0]; // ফাইল নেমই প্রোডাক্ট কোড
+            const fullPath = `${fileName}_${Date.now()}.${fileExt}`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('product-images')
+                .upload(fullPath, file);
+
+            if (uploadError) {
+                alert("ইমেজ আপলোড এরর: " + uploadError.message);
+                btn.disabled = false;
+                return;
+            }
+
+            const { data: urlData } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(fullPath);
+            
+            finalImageUrl = urlData.publicUrl;
+        }
+
+        // ডাটাবেসে ডাটা পাঠানো
         const productData = {
-            name: document.getElementById('productName').value,
-            code: document.getElementById('productCode').value,
             category: document.getElementById('category').value,
-            price: parseFloat(document.getElementById('price').value),
-            image: document.getElementById('imageLink').value
+            name: document.getElementById('pName').value,
+            mrp: parseFloat(document.getElementById('mrp').value),
+            discount: parseInt(document.getElementById('discount').value) || 0,
+            stock: parseInt(document.getElementById('stock').value),
+            quantity: document.getElementById('qtyVal').value,
+            unit: document.getElementById('unit').value,
+            image_url: finalImageUrl,
+            product_code: file ? file.name.split('.')[0] : 'WEB_IMG'
         };
 
-        try {
-            // 'products' টেবিলে ডাটা ইনসার্ট করা
-            const { data, error } = await supabase
-                .from('products')
-                .insert([productData]);
+        const { error } = await supabase.from('products').insert([productData]);
 
-            if (error) throw error;
-
+        if(error) {
+            alert("ডাটাবেস এরর: " + error.message);
+        } else {
             alert("প্রোডাক্ট সফলভাবে যোগ করা হয়েছে!");
-            document.getElementById('productForm').reset();
-            uploadStatus.innerText = "";
-        } catch (error) {
-            console.error("Error adding product: ", error);
-            alert("প্রোডাক্ট যোগ করতে সমস্যা হয়েছে: " + error.message);
-        } finally {
-            submitBtn.innerText = "Add Product";
-            submitBtn.disabled = false;
+            location.reload(); // পেজ রিফ্রেশ করে ফর্ম ক্লিয়ার করা
+        }
+        btn.disabled = false;
+        btn.innerText = "OK / সাবমিট করুন";
+    };
+
+    // কিবোর্ড এন্টার সাপোর্ট
+    document.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter' && e.target.id !== 'submitBtn') {
+            const currentTab = parseInt(e.target.getAttribute('tabindex'));
+            const nextInput = document.querySelector(`[tabindex="${currentTab + 1}"]`);
+            if(nextInput) nextInput.focus();
         }
     });
 </script>
