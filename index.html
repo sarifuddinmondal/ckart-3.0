@@ -3,206 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CKART - Premium Shopping</title>
+    <title>CKART - Home</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #ff4757;
-            --secondary: #2f3542;
-            --bg: #f1f2f6;
-        }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: var(--bg); }
-
-        /* 1. Header Section */
-        header {
-            background: white; padding: 10px 5%; display: flex; justify-content: space-between;
-            align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000;
-        }
-        .logo img { height: 50px; cursor: pointer; }
-        .search-bar { flex: 0.5; position: relative; }
-        .search-bar input { width: 100%; padding: 10px 40px 10px 15px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
-        .search-bar i { position: absolute; right: 15px; top: 12px; color: #888; }
-        .nav-menu { display: flex; gap: 20px; align-items: center; }
-        .nav-item { cursor: pointer; font-weight: 600; color: var(--secondary); text-decoration: none; }
-        .cart-icon { position: relative; font-size: 22px; }
-        #cart-count { 
-            position: absolute; top: -10px; right: -10px; background: var(--primary); 
-            color: white; font-size: 11px; padding: 2px 6px; border-radius: 50%; 
-        }
-
-        /* 2. Category Section */
-        .category-scroll {
-            display: flex; overflow-x: auto; padding: 20px 5%; gap: 15px; background: white;
-            scrollbar-width: none; /* Firefox */
-        }
-        .category-scroll::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-        .cat-card {
-            min-width: 100px; text-align: center; cursor: pointer; transition: 0.3s;
-        }
-        .cat-card img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: #eee; }
-        .cat-card p { font-size: 13px; margin-top: 5px; font-weight: 500; }
-
-        /* 3. Product Grid (5-Column Layout) */
-        .container { padding: 30px 5%; }
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr); /* Desktop: 5 Columns */
-            gap: 20px;
-        }
-
-        .product-card {
-            background: white; border-radius: 12px; padding: 15px; text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.3s;
-        }
-        .product-card:hover { transform: translateY(-5px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
-        .product-card img { width: 100%; height: 160px; object-fit: contain; margin-bottom: 10px; }
-        .p-name { font-size: 15px; font-weight: bold; height: 40px; overflow: hidden; }
-        .p-price { color: var(--primary); font-size: 18px; font-weight: bold; margin: 10px 0; }
+        :root { --primary: #764ba2; --bg: #f4f7f6; --text: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
-        /* 4. Add to Cart Logic */
-        .btn-add {
-            background: var(--secondary); color: white; border: none; width: 100%;
-            padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: bold;
-        }
-        .btn-add.added { background: #27ae60; }
+        /* Navbar */
+        .navbar { background: white; padding: 15px 5%; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--primary); text-decoration: none; }
         
-        .qty-controls { display: none; align-items: center; justify-content: center; gap: 15px; margin-top: 10px; }
-        .qty-btn { background: #ddd; border: none; padding: 5px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        /* Product Grid */
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
+        
+        /* Product Card */
+        .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s; position: relative; display: flex; flex-direction: column; }
+        .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        
+        .discount-badge { position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; z-index: 1; }
+        
+        .product-card img { width: 100%; height: 250px; object-fit: cover; background: #f9f9f9; }
+        
+        .product-info { padding: 20px; flex-grow: 1; text-align: center; }
+        .product-info h3 { margin: 0 0 10px; font-size: 18px; color: #444; }
+        .product-info p { color: #888; font-size: 14px; margin-bottom: 15px; }
 
-        /* Responsive */
-        @media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 600px) { .product-grid { grid-template-columns: repeat(2, 1fr); } .search-bar { display: none; } }
+        .price-container { margin-bottom: 15px; }
+        .final-price { font-size: 20px; font-weight: bold; color: #27ae60; }
+        .old-price { text-decoration: line-through; color: #999; font-size: 14px; margin-left: 8px; }
+
+        .add-to-cart { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .add-to-cart:hover { background: #5a3a8a; }
+
+        /* Loader */
+        #loader { text-align: center; font-size: 18px; padding: 50px; }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">
-            <img src="https://i.ibb.co/5gvG8kHP/logo.png" alt="CKART Logo" onclick="location.reload()">
-        </div>
-        <div class="search-bar">
-            <input type="text" id="searchInput" placeholder="Search products...">
-            <i class="fas fa-search"></i>
-        </div>
-        <div class="nav-menu">
-            <a href="index.html" class="nav-item">Home</a>
-            <span id="user-display" class="nav-item" onclick="location.href='login.html'">Login</span>
-            <a href="order_list.html" class="nav-item">My Orders</a>
-            <div class="cart-icon" onclick="location.href='cartbag.html'">
-                <i class="fas fa-shopping-bag"></i>
-                <span id="cart-count">0</span>
-            </div>
-        </div>
-    </header>
-
-    <div class="category-scroll" id="categoryList">
-        </div>
-
-    <div class="container">
-        <h2 style="margin-bottom: 25px;">Featured Products</h2>
-        <div class="product-grid" id="productGrid">
-            </div>
+<nav class="navbar">
+    <a href="index.html" class="logo">CKART</a>
+    <div class="nav-icons">
+        <a href="A-login.html" style="text-decoration:none; color:var(--primary);"><i class="fas fa-user-shield"></i> Admin</a>
     </div>
+</nav>
 
-    <script type="module">
-        import { supabase } from './supabaseClient.js';
+<div class="container">
+    <div id="loader">পণ্য লোড হচ্ছে...</div>
+    <div class="product-grid" id="productGrid"></div>
+</div>
 
-        let cart = JSON.parse(localStorage.getItem('ckart_cart')) || [];
+<script type="module">
+    import { supabase } from './supabaseClient.js';
 
-        // 1. Load User Info
-        async function checkUser() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                document.getElementById('user-display').innerText = user.email.split('@')[0];
+    async function fetchProducts() {
+        const productGrid = document.getElementById('productGrid');
+        const loader = document.getElementById('loader');
+
+        try {
+            // ১. ডাটাবেস থেকে সব প্রোডাক্ট নিয়ে আসা
+            const { data: products, error } = await supabase
+                .from('products')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) throw error;
+
+            loader.style.display = 'none';
+
+            if (products.length === 0) {
+                productGrid.innerHTML = "<p>কোনো প্রোডাক্ট পাওয়া যায়নি।</p>";
+                return;
             }
-        }
 
-        // 2. Load Categories (Smart Matching logic enabled)
-        async function loadCategories() {
-            const { data: products } = await supabase.from('products').select('category').unique();
-            const catList = document.getElementById('categoryList');
-            catList.innerHTML = "";
-            
-            const categories = [...new Set(products?.map(p => p.category))];
-            categories.forEach(cat => {
-                catList.innerHTML += `
-                    <div class="cat-card" onclick="filterCategory('${cat}')">
-                        <img src="https://via.placeholder.com/60?text=${cat}" alt="${cat}">
-                        <p>${cat}</p>
-                    </div>`;
-            });
-        }
+            // ২. প্রোডাক্ট কার্ড তৈরি করা
+            productGrid.innerHTML = products.map(product => {
+                // ডিসকাউন্ট ক্যালকুলেশন
+                const originalPrice = parseFloat(product.price) || 0;
+                const discount = parseInt(product.discount) || 0;
+                const finalPrice = originalPrice - (originalPrice * (discount / 100));
+                
+                // ছবির জন্য লজিক: যদি image_url থাকে তবে সেটা নেবে, নাহলে একটি প্লেসহোল্ডার
+                const imageSrc = product.image_url ? product.image_url : 'https://via.placeholder.com/250';
 
-        // 3. Load Products (5-Column Grid)
-        async function loadProducts(query = "") {
-            const grid = document.getElementById('productGrid');
-            let request = supabase.from('products').select('*');
-            
-            if (query) request = request.ilike('name', `%${query}%`);
-
-            const { data: products, error } = await request;
-
-            grid.innerHTML = products?.length ? "" : "<p>No products found.</p>";
-            
-            products?.forEach(p => {
-                const card = document.createElement('div');
-                card.className = 'product-card';
-                card.innerHTML = `
-                    <img src="${p.image}" alt="${p.name}">
-                    <div class="p-name">${p.name}</div>
-                    <div class="p-price">TK ${p.price}</div>
-                    <button class="btn-add" id="btn-${p.id}" onclick="addToCart(${p.id}, '${p.name}', ${p.price})">Add to Cart</button>
-                    <div class="qty-controls" id="qty-${p.id}">
-                        <button class="qty-btn" onclick="changeQty(${p.id}, -1)">-</button>
-                        <span id="count-${p.id}">1</span>
-                        <button class="qty-btn" onclick="changeQty(${p.id}, 1)">+</button>
+                return `
+                    <div class="product-card">
+                        ${discount > 0 ? `<div class="discount-badge">${discount}% OFF</div>` : ''}
+                        <img src="${imageSrc}" alt="${product.name}">
+                        <div class="product-info">
+                            <p style="margin:0; font-weight:bold; color:#aaa;">${product.category}</p>
+                            <h3>${product.name}</h3>
+                            <div class="price-container">
+                                <span class="final-price">₹${finalPrice.toFixed(2)}</span>
+                                ${discount > 0 ? `<span class="old-price">₹${originalPrice}</span>` : ''}
+                            </div>
+                            <small>Code: ${product.product_code || 'N/A'}</small>
+                        </div>
+                        <button class="add-to-cart" onclick="addToCart('${product.product_code}')">
+                            <i class="fas fa-shopping-cart"></i> ADD TO CART
+                        </button>
                     </div>
                 `;
-                grid.appendChild(card);
-            });
+            }).join('');
+
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            loader.innerHTML = "প্রোডাক্ট লোড করতে সমস্যা হচ্ছে। কনসোল চেক করুন।";
         }
+    }
 
-        // 4. Cart Logic (Plus/Minus Toggle)
-        window.addToCart = (id, name, price) => {
-            const btn = document.getElementById(`btn-${id}`);
-            const qtyBox = document.getElementById(`qty-${id}`);
-            
-            btn.style.display = 'none';
-            qtyBox.style.display = 'flex';
-            
-            cart.push({ id, name, price, qty: 1 });
-            saveCart();
-        };
+    // উইন্ডো গ্লোবাল ফাংশন যেন HTML থেকে কল করা যায়
+    window.addToCart = (code) => {
+        alert("Product Added to Cart: " + code);
+        // এখানে আপনার কার্ট লজিক যোগ করতে পারেন
+    };
 
-        window.changeQty = (id, change) => {
-            let item = cart.find(i => i.id === id);
-            if (item) {
-                item.qty += change;
-                if (item.qty <= 0) {
-                    cart = cart.filter(i => i.id !== id);
-                    document.getElementById(`btn-${id}`).style.display = 'block';
-                    document.getElementById(`qty-${id}`).style.display = 'none';
-                } else {
-                    document.getElementById(`count-${id}`).innerText = item.qty;
-                }
-                saveCart();
-            }
-        };
+    // পেজ লোড হলে ফাংশনটি রান করবে
+    fetchProducts();
+</script>
 
-        function saveCart() {
-            localStorage.setItem('ckart_cart', JSON.stringify(cart));
-            document.getElementById('cart-count').innerText = cart.length;
-        }
-
-        // 5. Live Search
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            loadProducts(e.target.value);
-        });
-
-        // Initialize
-        checkUser();
-        loadCategories();
-        loadProducts();
-    </script>
 </body>
 </html>
