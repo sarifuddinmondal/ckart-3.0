@@ -8,17 +8,23 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-        .logo { font-size: 30px; font-weight: bold; color: #764ba2; margin-bottom: 10px; }
-        h3 { color: #2f3542; margin-bottom: 30px; }
+        .logo { font-size: 35px; font-weight: bold; color: #764ba2; margin-bottom: 5px; letter-spacing: 1px; }
+        h3 { color: #2f3542; margin-bottom: 30px; font-weight: 500; }
+        
         .btn-google { 
-            width: 100%; padding: 15px; background: white; color: #555; 
-            border: 1px solid #ddd; border-radius: 10px; font-weight: bold; 
+            width: 100%; padding: 14px; background: white; color: #555; 
+            border: 1px solid #ddd; border-radius: 12px; font-weight: bold; 
             cursor: pointer; font-size: 16px; display: flex; align-items: center; 
-            justify-content: center; gap: 12px; transition: 0.3s;
+            justify-content: center; gap: 12px; transition: all 0.3s ease;
         }
-        .btn-google:hover { background: #f8f9fa; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .msg { font-size: 12px; color: #888; margin-top: 25px; line-height: 1.5; }
-        .loading { font-size: 14px; color: #764ba2; display: none; margin-top: 10px; }
+        .btn-google:hover { background: #f8f9fa; border-color: #bbb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .btn-google:active { transform: translateY(0); }
+        .btn-google:disabled { background: #eee; cursor: not-allowed; border-color: #eee; }
+
+        .loading { font-size: 14px; color: #764ba2; display: none; margin-top: 20px; font-weight: 500; }
+        .msg { font-size: 12px; color: #999; margin-top: 30px; line-height: 1.6; }
+        
+        i.fa-spinner { margin-right: 8px; }
     </style>
 </head>
 <body>
@@ -28,13 +34,16 @@
     <h3>Consumer Login</h3>
     
     <button id="googleLoginBtn" class="btn-google">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20" alt="Google">
         Google দিয়ে লগইন করুন
     </button>
-    <div id="loader" class="loading"><i class="fas fa-spinner fa-spin"></i> অপেক্ষা করুন...</div>
+    
+    <div id="loader" class="loading">
+        <i class="fas fa-spinner fa-spin"></i> প্রসেসিং হচ্ছে, অপেক্ষা করুন...
+    </div>
     
     <div class="msg">
-        লগইন করলে আপনার নাম এবং ইমেইল আমাদের সিস্টেমে সংরক্ষিত হবে যাতে আপনি ভবিষ্যতে অর্ডার করতে পারেন।
+        লগইন করার মাধ্যমে আপনি আমাদের শর্তাবলীতে সম্মতি জানাচ্ছেন। আপনার তথ্য আমাদের কাছে সুরক্ষিত থাকবে।
     </div>
 </div>
 
@@ -44,56 +53,58 @@
     const loginBtn = document.getElementById('googleLoginBtn');
     const loader = document.getElementById('loader');
 
-    // ১. গুগল লগইন ফাংশন
+    // ১. গুগল লগইন ট্রিগার ফাংশন
     async function loginWithGoogle() {
         loader.style.display = "block";
         loginBtn.disabled = true;
 
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    // লগইন সফল হলে সরাসরি index.html এ যাবে
-                    redirectTo: window.location.origin + '/index.html' 
-                }
-            });
+        // আপনার গিটহাবের বর্তমান লিঙ্কটি অটোমেটিক খুঁজে বের করা
+        const currentPath = window.location.origin + window.location.pathname;
+        const redirectPath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1) + 'index.html';
 
-            if (error) throw error;
-        } catch (error) {
-            alert("লগইন করতে সমস্যা হয়েছে: " + error.message);
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: redirectPath
+            }
+        });
+
+        if (error) {
+            alert("গুগল লগইন এরর: " + error.message);
             loader.style.display = "none";
             loginBtn.disabled = false;
         }
     }
 
-    // ২. লগইন অবস্থা চেক করা এবং ডাটা সেভ করা
-    async function checkUser() {
-        const { data: { session } } = await supabase.auth.getSession();
+    // ২. লগইন অবস্থা চেক করা এবং কাস্টমার ডাটাবেসে সেভ করা
+    async function checkSession() {
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (session) {
+        if (session && session.user) {
             const user = session.user;
             
-            // 'profiles' টেবিলে ইউজারের তথ্য আপডেট বা ইনসার্ট করা
-            const { error } = await supabase
+            // profiles টেবিলে ডাটা ইনসার্ট বা আপডেট (Upsert) করা
+            // এতে কাস্টমারের নাম, ইমেইল ও ছবি সেভ হয়ে থাকবে
+            const { error: upsertError } = await supabase
                 .from('profiles')
                 .upsert({
                     id: user.id,
                     full_name: user.user_metadata.full_name,
                     email: user.email,
                     avatar_url: user.user_metadata.avatar_url,
-                    last_login: new Date()
-                });
+                    last_login: new Date().toISOString()
+                }, { onConflict: 'id' });
 
-            if (!error) {
-                window.location.href = "index.html"; // প্রোফাইল সেভ হলে হোম পেজে রিডাইরেক্ট
-            }
+            // প্রোফাইল আপডেট হোক বা না হোক, ইউজারকে মেইন পেজে পাঠিয়ে দেওয়া
+            window.location.href = "index.html";
         }
     }
 
+    // বাটন ক্লিক ইভেন্ট
     loginBtn.addEventListener('click', loginWithGoogle);
     
-    // পেজ লোড হলে চেক করবে অলরেডি লগইন আছে কি না
-    checkUser();
+    // পেজ লোড হলে চেক করবে ইউজার অলরেডি লগইন কি না
+    window.onload = checkSession;
 </script>
 
 </body>
