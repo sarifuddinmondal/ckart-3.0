@@ -34,7 +34,7 @@
     
     <button id="googleBtn" class="google-btn">
         <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google Logo">
-        Google দিয়ে লগইন করুন
+        Google দিয়ে লগইন করুন
     </button>
 
     <div id="loading" class="loader">
@@ -47,7 +47,6 @@
 </div>
 
 <script type="module">
-    // আপনার প্রোভাইড করা সুপাবেস ক্লায়েন্ট ইমপোর্ট করা
     import { supabase } from './supabaseClient.js';
 
     const googleBtn = document.getElementById('googleBtn');
@@ -58,28 +57,32 @@
         loading.style.display = "block";
         googleBtn.disabled = true;
 
-        // আপনার গিটহাব পেজেস এর রিডাইরেক্ট পাথ সেট করা
-        const redirectUrl = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
+        // আপনার সঠিক গিটহাব পেজ লিঙ্ক (ckart-3.0 ফোল্ডার সহ)
+        const redirectUrl = 'https://sarifuddinmondal.github.io/ckart-3.0/index.html';
 
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: redirectUrl
-            }
-        });
+        try {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: redirectUrl,
+                    queryParams: {
+                        prompt: 'select_account' // এটি ইউজারকে বারবার অ্যাকাউন্ট সিলেক্ট করার সুযোগ দেয়
+                    }
+                }
+            });
 
-        if (error) {
+            if (error) throw error;
+        } catch (error) {
             alert("লগইন এরর: " + error.message);
             loading.style.display = "none";
             googleBtn.disabled = false;
         }
     }
 
-    // অলরেডি লগইন থাকলে অটোমেটিক চেক করা
+    // অলরেডি লগইন থাকলে চেক করা
     async function checkUser() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-            // লগইন থাকলে ইন্ডেক্স পেজে পাঠিয়ে দেবে
             window.location.href = "index.html";
         }
     }
