@@ -3,108 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consumer Login - CKART</title>
+    <title>Consumer Login - CKART 3.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 350px; text-align: center; }
-        .logo { font-size: 35px; font-weight: bold; color: #764ba2; margin-bottom: 5px; letter-spacing: 1px; }
-        h3 { color: #2f3542; margin-bottom: 30px; font-weight: 500; }
+        :root { --primary: #764ba2; --secondary: #667eea; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, var(--secondary), var(--primary)); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 380px; text-align: center; }
+        .logo { font-size: 35px; font-weight: bold; color: var(--primary); margin-bottom: 5px; }
+        h2 { color: #333; margin-bottom: 30px; font-weight: 500; }
         
-        .btn-google { 
-            width: 100%; padding: 14px; background: white; color: #555; 
-            border: 1px solid #ddd; border-radius: 12px; font-weight: bold; 
+        .google-btn { 
+            width: 100%; padding: 12px 20px; background: white; color: #555; 
+            border: 1px solid #ddd; border-radius: 50px; font-weight: 600; 
             cursor: pointer; font-size: 16px; display: flex; align-items: center; 
             justify-content: center; gap: 12px; transition: all 0.3s ease;
         }
-        .btn-google:hover { background: #f8f9fa; border-color: #bbb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .btn-google:active { transform: translateY(0); }
-        .btn-google:disabled { background: #eee; cursor: not-allowed; border-color: #eee; }
+        .google-btn:hover { background: #f8f9fa; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-color: #ccc; }
+        .google-btn img { width: 22px; }
 
-        .loading { font-size: 14px; color: #764ba2; display: none; margin-top: 20px; font-weight: 500; }
-        .msg { font-size: 12px; color: #999; margin-top: 30px; line-height: 1.6; }
-        
-        i.fa-spinner { margin-right: 8px; }
+        .loader { display: none; margin-top: 20px; color: var(--primary); font-weight: 500; }
+        .footer-text { font-size: 12px; color: #888; margin-top: 30px; line-height: 1.5; }
+        i.fa-spinner { margin-right: 10px; }
     </style>
 </head>
 <body>
 
 <div class="login-card">
-    <div class="logo">CKART</div>
-    <h3>Consumer Login</h3>
+    <div class="logo">CKART 3.0</div>
+    <h2>Consumer Login</h2>
     
-    <button id="googleLoginBtn" class="btn-google">
-        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="20" alt="Google">
-        Google দিয়ে লগইন করুন
+    <button id="googleBtn" class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" alt="Google Logo">
+        Google দিয়ে লগইন করুন
     </button>
-    
-    <div id="loader" class="loading">
-        <i class="fas fa-spinner fa-spin"></i> প্রসেসিং হচ্ছে, অপেক্ষা করুন...
+
+    <div id="loading" class="loader">
+        <i class="fas fa-spinner fa-spin"></i> প্রসেসিং হচ্ছে...
     </div>
-    
-    <div class="msg">
-        লগইন করার মাধ্যমে আপনি আমাদের শর্তাবলীতে সম্মতি জানাচ্ছেন। আপনার তথ্য আমাদের কাছে সুরক্ষিত থাকবে।
+
+    <div class="footer-text">
+        লগইন করার মাধ্যমে আপনি আমাদের শর্তাবলীতে সম্মতি জানাচ্ছেন। আপনার ডেটা আমাদের কাছে নিরাপদ।
     </div>
 </div>
 
 <script type="module">
+    // আপনার প্রোভাইড করা সুপাবেস ক্লায়েন্ট ইমপোর্ট করা
     import { supabase } from './supabaseClient.js';
 
-    const loginBtn = document.getElementById('googleLoginBtn');
-    const loader = document.getElementById('loader');
+    const googleBtn = document.getElementById('googleBtn');
+    const loading = document.getElementById('loading');
 
-    // ১. গুগল লগইন ট্রিগার ফাংশন
-    async function loginWithGoogle() {
-        loader.style.display = "block";
-        loginBtn.disabled = true;
+    // গুগল লগইন ফাংশন
+    async function handleGoogleLogin() {
+        loading.style.display = "block";
+        googleBtn.disabled = true;
 
-        // আপনার গিটহাবের বর্তমান লিঙ্কটি অটোমেটিক খুঁজে বের করা
-        const currentPath = window.location.origin + window.location.pathname;
-        const redirectPath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1) + 'index.html';
+        // আপনার গিটহাব পেজেস এর রিডাইরেক্ট পাথ সেট করা
+        const redirectUrl = window.location.origin + window.location.pathname.replace('login.html', 'index.html');
 
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: redirectPath
+                redirectTo: redirectUrl
             }
         });
 
         if (error) {
-            alert("গুগল লগইন এরর: " + error.message);
-            loader.style.display = "none";
-            loginBtn.disabled = false;
+            alert("লগইন এরর: " + error.message);
+            loading.style.display = "none";
+            googleBtn.disabled = false;
         }
     }
 
-    // ২. লগইন অবস্থা চেক করা এবং কাস্টমার ডাটাবেসে সেভ করা
-    async function checkSession() {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (session && session.user) {
-            const user = session.user;
-            
-            // profiles টেবিলে ডাটা ইনসার্ট বা আপডেট (Upsert) করা
-            // এতে কাস্টমারের নাম, ইমেইল ও ছবি সেভ হয়ে থাকবে
-            const { error: upsertError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: user.id,
-                    full_name: user.user_metadata.full_name,
-                    email: user.email,
-                    avatar_url: user.user_metadata.avatar_url,
-                    last_login: new Date().toISOString()
-                }, { onConflict: 'id' });
-
-            // প্রোফাইল আপডেট হোক বা না হোক, ইউজারকে মেইন পেজে পাঠিয়ে দেওয়া
+    // অলরেডি লগইন থাকলে অটোমেটিক চেক করা
+    async function checkUser() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            // লগইন থাকলে ইন্ডেক্স পেজে পাঠিয়ে দেবে
             window.location.href = "index.html";
         }
     }
 
-    // বাটন ক্লিক ইভেন্ট
-    loginBtn.addEventListener('click', loginWithGoogle);
-    
-    // পেজ লোড হলে চেক করবে ইউজার অলরেডি লগইন কি না
-    window.onload = checkSession;
+    googleBtn.addEventListener('click', handleGoogleLogin);
+    window.onload = checkUser;
 </script>
 
 </body>
