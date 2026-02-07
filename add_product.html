@@ -35,10 +35,10 @@
 <body>
 
 <div class="form-container">
-    <h2>➕ নতুন প্রোডাক্ট যোগ করুন</h2>
+    <h2>➕ ADD PRODUCT</h2>
     
     <div class="form-group">
-        <label>ক্যাটাগরি</label>
+        <label>CATAGORY</label>
         <div class="cat-flex">
             <select id="category" tabindex="1">
                 <option value="Body Care">Body Care</option>
@@ -57,8 +57,8 @@
     </div>
 
     <div class="form-group">
-        <label>প্রোডাক্টের নাম</label>
-        <input type="text" id="pName" placeholder="সম্পূর্ণ নাম লিখুন" tabindex="3" required>
+        <label>PRODUCT NAME</label>
+        <input type="text" id="pName" placeholder="" tabindex="3" required>
     </div>
 
     <div class="row">
@@ -67,22 +67,22 @@
             <input type="number" id="mrp" placeholder="0.00" tabindex="4" required>
         </div>
         <div class="form-group">
-            <label>ডিসকাউন্ট (%)</label>
+            <label>DISCOUNT (%)</label>
             <input type="number" id="discount" placeholder="0" tabindex="5">
         </div>
     </div>
     <div class="form-group">
-        <label>স্টক (Quantity)</label>
-        <input type="number" id="stock" placeholder="কত পিস আছে?" tabindex="6" required>
+        <label>STOCK (Quantity)</label>
+        <input type="number" id="stock" placeholder="" tabindex="6" required>
     </div>
 
     <div class="row">
         <div class="form-group">
-            <label>পরিমাণ (Value)</label>
-            <input type="number" id="qtyVal" placeholder="উদা: ১০০" tabindex="7">
+            <label>QUNDITY (Value)</label>
+            <input type="number" id="qtyVal" placeholder="" tabindex="7">
         </div>
         <div class="form-group">
-            <label>ইউনিট</label>
+            <label>UNIT</label>
             <select id="unit" tabindex="8">
                 <option value="ml">ml</option>
                 <option value="qty">qty/pcs</option>
@@ -93,23 +93,23 @@
     </div>
 
     <div class="form-group">
-        <label>ওয়েব ইমেজ লিঙ্ক (ঐচ্ছিক)</label>
+        <label>WAB IMAGE LINK (ENTER)</label>
         <input type="url" id="webLink" placeholder="https://..." tabindex="9">
     </div>
     <div class="image-upload-section" onclick="document.getElementById('fileInput').click()" tabindex="10">
         <i class="fas fa-camera fa-2x"></i>
-        <p>ক্লিক করে ছবি আপলোড করুন</p>
+        <p>PHOTO UPLOAD</p>
         <input type="file" id="fileInput" hidden accept="image/*" onchange="previewImage(this)">
         <img id="imgPreview" class="preview-img">
     </div>
 
-    <button class="submit-btn" id="submitBtn" tabindex="11">OK / সাবমিট করুন</button>
+    <button class="submit-btn" id="submitBtn" tabindex="11">OK / SUBMIT</button>
 </div>
 
 <div id="catModal" class="modal">
     <div class="modal-content">
-        <h3>নতুন ক্যাটাগরি</h3>
-        <input type="text" id="newCatName" placeholder="ক্যাটাগরির নাম">
+        <h3>NEW CATAGOREY</h3>
+        <input type="text" id="newCatName" placeholder="CATAGOREY NAME">
         <div class="cat-flex" style="margin-top:15px; justify-content:center;">
             <button class="add-btn" onclick="addCategory()">OK</button>
             <button class="add-btn" style="background:#888;" onclick="closeModal()">Cancel</button>
@@ -202,11 +202,11 @@
         if(error) {
             alert("ডাটাবেস এরর: " + error.message);
         } else {
-            alert("প্রোডাক্ট সফলভাবে যোগ করা হয়েছে!");
+            alert("PRODUCT ADD COMPLITE!");
             location.reload(); // পেজ রিফ্রেশ করে ফর্ম ক্লিয়ার করা
         }
         btn.disabled = false;
-        btn.innerText = "OK / সাবমিট করুন";
+        btn.innerText = "OK / SUBMIT";
     };
 
     // কিবোর্ড এন্টার সাপোর্ট
