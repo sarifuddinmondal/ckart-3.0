@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CatBag - Your Shopping Bag</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #764ba2; --secondary: #667eea; --success: #2ecc71; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; }
+
+        /* --- Tab System (Flipkart Style) --- */
+        .tab-bar { background: white; display: flex; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .tab-item { flex: 1; text-align: center; padding: 15px; cursor: pointer; font-weight: bold; color: #555; transition: 0.3s; border-bottom: 3px solid transparent; }
+        .tab-item.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        /* --- Cart List Style --- */
+        .cart-item { background: white; padding: 15px; border-radius: 10px; display: flex; align-items: center; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .cart-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+        .item-details { flex: 1; padding-left: 15px; }
+        .qty-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .qty-btn { background: #eee; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        .total-section { background: white; padding: 20px; border-radius: 10px; margin-top: 20px; text-align: right; }
+        .order-btn { background: var(--primary); color: white; border: none; padding: 12px 30px; border-radius: 25px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; margin-top: 10px; }
+
+        /* --- My Order Style --- */
+        .order-card { background: white; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid var(--secondary); }
+        .status-tracker { font-size: 12px; color: var(--primary); font-weight: bold; margin-top: 10px; text-transform: uppercase; }
+        .order-id { font-size: 14px; color: #888; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="tab-bar">
+    <div class="tab-item active" onclick="openTab(event, 'cart-list')">1-CART LIST</div>
+    <div class="tab-item" onclick="openTab(event, 'my-order')">2-MY ORDER</div>
+</div>
+
+<div class="container">
+    <div id="cart-list" class="content-section active">
+        <div id="cartItemsContainer">
+            </div>
+        <div class="total-section">
+            <h3>Total Amount: ₹<span id="totalPrice">0</span></h3>
+            <button class="order-btn" onclick="placeOrder()">Order Now</button>
+        </div>
+    </div>
+
+    <div id="my-order" class="content-section">
+        <div id="ordersContainer">
+            </div>
+    </div>
+</div>
+
+<script type="module">
+    import { supabase } from './supabaseClient.js';
+
+    let cartData = JSON.parse(localStorage.getItem('cart')) || [];
+
+    // --- Tab Switch Function ---
+    window.openTab = (evt, tabName) => {
+        document.querySelectorAll('.content-section').forEach(section => section.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(tabName).classList.add('active');
+        evt.currentTarget.classList.add('active');
+        if(tabName === 'my-order') loadMyOrders();
+    };
+
+    // --- Load Cart Items ---
+    function renderCart() {
+        const container = document.getElementById('cartItemsContainer');
+        let total = 0;
+        
+        if (cartData.length === 0) {
+            container.innerHTML = "<p style='text-align:center;'>আপনার কার্ট ব্যাগ খালি।</p>";
+            document.getElementById('totalPrice').innerText = 0;
+            return;
+        }
+
+        container.innerHTML = cartData.map((item, index) => {
+            const price = parseFloat(item.mrp || item.price);
+            total += price * item.qty;
+            return `
+                <div class="cart-item">
+                    <img src="${item.image_url}" alt="product">
+                    <div class="item-details">
+                        <h3 style="margin:0; font-size:16px;">${item.name}</h3>
+                        <p style="margin:5px 0; color:var(--success); font-weight:bold;">₹${price}</p>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        document.getElementById('totalPrice').innerText = total;
+    }
+
+    window.updateQty = (index, change) => {
+        cartData[index].qty += change;
+        if (cartData[index].qty < 1) cartData.splice(index, 1);
+        localStorage.setItem('cart', JSON.stringify(cartData));
+        renderCart();
+    };
+
+    // --- Order ID Logic (CK00000001 start) ---
+    async function generateOrderID() {
+        const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+        const nextNum = (count || 0) + 1;
+        return "CK" + nextNum.toString().padStart(8, '0');
+    }
+
+    // --- Place Order Logic ---
+    window.placeOrder = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return alert("অর্ডার করতে আগে লগইন করুন!");
+
+        const orderId = await generateOrderID();
+        const user = session.user;
+
+        const orderPayload = cartData.map(item => ({
+            order_id: orderId,
+            consumer_id: user.id,
+            product_name: item.name,
+            price: item.price || item.mrp,
+            product_image: item.image_url,
+            status: 'ORDER PICKUP PENDING'
+        }));
+
+        const { error } = await supabase.from('orders').insert(orderPayload);
+
+        if (!error) {
+            alert("অর্ডার সফল হয়েছে! ID: " + orderId);
+            localStorage.removeItem('cart');
+            window.location.reload();
+        } else {
+            alert("Error: " + error.message);
+        }
+    };
+
+    // --- Load My Orders ---
+    async function loadMyOrders() {
+        const { data: { session } } = await supabase.auth.getSession();
+        const container = document.getElementById('ordersContainer');
+        
+        const { data, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('consumer_id', session.user.id)
+            .order('created_at', { ascending: false });
+
+        if (data) {
+            container.innerHTML = data.map(order => `
+                <div class="order-card">
+                    <div class="order-id">ID: ${order.order_id}</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${order.product_image}" width="50" style="border-radius:5px;">
+                        <div>
+                            <div style="font-weight:bold;">${order.product_name}</div>
+                            <div style="color:var(--success);">₹${order.price}</div>
+                        </div>
+                    </div>
+                    <div class="status-tracker">
+                        <i class="fas fa-truck-loading"></i> Status: ${order.status}
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+
+    renderCart();
+</script>
+
+</body>
+</html>
