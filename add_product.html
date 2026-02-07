@@ -39,9 +39,14 @@
     <h2>➕ ADD PRODUCT</h2>
     
     <div class="form-group">
+        <label>PRODUCT CODE (e.g. 00004)</label>
+        <input type="text" id="pCode" placeholder="কোড লিখুন (এটি ছবির নাম হবে)" tabindex="1" required>
+    </div>
+
+    <div class="form-group">
         <label>CATEGORY</label>
         <div class="cat-flex">
-            <select id="category" tabindex="1">
+            <select id="category" tabindex="2">
                 <option value="Body Care">Body Care</option>
                 <option value="Cosmetic">Cosmetic</option>
                 <option value="Face Care">Face Care</option>
@@ -53,39 +58,39 @@
                 <option value="Skin Care">Skin Care</option>
                 <option value="Others">Others</option>
             </select>
-            <button class="add-btn" type="button" onclick="openModal()" tabindex="2">Add</button>
+            <button class="add-btn" type="button" onclick="openModal()" tabindex="3">Add</button>
         </div>
     </div>
 
     <div class="form-group">
         <label>PRODUCT NAME</label>
-        <input type="text" id="pName" placeholder="নাম লিখুন" tabindex="3" required>
+        <input type="text" id="pName" placeholder="নাম লিখুন" tabindex="4" required>
     </div>
 
     <div class="row">
         <div class="form-group">
             <label>MRP (₹)</label>
-            <input type="number" id="mrp" placeholder="0.00" tabindex="4" required>
+            <input type="number" id="mrp" placeholder="0.00" tabindex="5" required>
         </div>
         <div class="form-group">
             <label>DISCOUNT (%)</label>
-            <input type="number" id="discount" placeholder="0" tabindex="5">
+            <input type="number" id="discount" placeholder="0" tabindex="6">
         </div>
     </div>
 
     <div class="form-group">
         <label>STOCK (Quantity)</label>
-        <input type="number" id="stock" placeholder="0" tabindex="6" required>
+        <input type="number" id="stock" placeholder="0" tabindex="7" required>
     </div>
 
     <div class="row">
         <div class="form-group">
             <label>QUANTITY (Value)</label>
-            <input type="number" id="qtyVal" placeholder="100" tabindex="7">
+            <input type="number" id="qtyVal" placeholder="100" tabindex="8">
         </div>
         <div class="form-group">
             <label>UNIT</label>
-            <select id="unit" tabindex="8">
+            <select id="unit" tabindex="9">
                 <option value="ml">ml</option>
                 <option value="qty">qty/pcs</option>
                 <option value="g">g</option>
@@ -96,17 +101,17 @@
 
     <div class="form-group">
         <label>WEB IMAGE LINK (OPTIONAL)</label>
-        <input type="url" id="webLink" placeholder="https://..." tabindex="9">
+        <input type="url" id="webLink" placeholder="https://..." tabindex="10">
     </div>
 
-    <div class="image-upload-section" onclick="document.getElementById('fileInput').click()" tabindex="10">
+    <div class="image-upload-section" onclick="document.getElementById('fileInput').click()" tabindex="11">
         <i class="fas fa-camera fa-2x"></i>
         <p>PHOTO UPLOAD</p>
         <input type="file" id="fileInput" hidden accept="image/*" onchange="previewImage(this)">
         <img id="imgPreview" class="preview-img">
     </div>
 
-    <button class="submit-btn" id="submitBtn" tabindex="11">OK / SUBMIT</button>
+    <button class="submit-btn" id="submitBtn" tabindex="12">OK / SUBMIT</button>
 </div>
 
 <div id="catModal" class="modal">
@@ -153,63 +158,64 @@
         }
     };
 
-    // ৪. মেইন সাবমিশন (সংশোধিত)
+    // ৪. মেইন সাবমিশন (সংশোধিত লজিক)
     document.getElementById('submitBtn').onclick = async () => {
         const btn = document.getElementById('submitBtn');
         const file = document.getElementById('fileInput').files[0];
         const webLink = document.getElementById('webLink').value;
+        const pCode = document.getElementById('pCode').value.trim(); // Product Code নিলো
         const pName = document.getElementById('pName').value.trim();
         const mrpVal = document.getElementById('mrp').value;
 
         // ভ্যালিডেশন
-        if(!pName || !mrpVal) {
-            alert("দয়া করে প্রোডাক্টের নাম এবং দাম (MRP) লিখুন!");
+        if(!pCode || !pName || !mrpVal) {
+            alert("দয়া করে প্রোডাক্ট কোড, নাম এবং দাম (MRP) লিখুন!");
             return;
         }
 
         btn.disabled = true;
         btn.innerText = "সেভ হচ্ছে...";
 
-        let finalImageUrl = webLink;
-
         try {
-            // ফাইল আপলোড লজিক
+            let finalImageUrl = webLink;
+
+            // ফাইল আপলোড লজিক (নাম হবে প্রোডাক্ট কোড অনুযায়ী)
             if(file) {
                 const fileExt = file.name.split('.').pop();
-                const fileName = file.name.split('.')[0]; 
-                const fullPath = `${fileName}_${Date.now()}.${fileExt}`;
+                // আপনার চাহিদা অনুযায়ী ফাইলের নাম সেট করা হচ্ছে: productCode.extension
+                const fileName = `${pCode}.${fileExt}`; 
 
                 const { data: uploadData, error: uploadError } = await supabase.storage
                     .from('product-images')
-                    .upload(fullPath, file);
+                    .upload(fileName, file, { upsert: true }); // upsert true মানে একই কোডে ছবি থাকলে রিপ্লেস হবে
 
                 if (uploadError) throw uploadError;
 
                 const { data: urlData } = supabase.storage
                     .from('product-images')
-                    .getPublicUrl(fullPath);
+                    .getPublicUrl(fileName);
                 
                 finalImageUrl = urlData.publicUrl;
             }
 
             // ডাটাবেসে ডাটা পাঠানো
             const productData = {
+                product_code: pCode,
                 category: document.getElementById('category').value,
                 name: pName,
-                price: parseFloat(mrpVal), // ডাটাবেস কলাম 'price' এর সাথে ম্যাচ করা হয়েছে
+                price: parseFloat(mrpVal),
                 discount: parseInt(document.getElementById('discount').value) || 0,
                 stock: parseInt(document.getElementById('stock').value) || 0,
                 quantity: document.getElementById('qtyVal').value,
                 unit: document.getElementById('unit').value,
-                image_url: finalImageUrl,
-                product_code: file ? file.name.split('.')[0] : 'WEB_IMG'
+                image_url: finalImageUrl
             };
 
             const { error } = await supabase.from('products').insert([productData]);
 
             if(error) throw error;
 
-            alert("PRODUCT ADD COMPLETE!");
+            alert("PRODUCT ADD COMPLETE!\nPhoto saved as: " + pCode);
             location.reload();
 
         } catch (err) {
