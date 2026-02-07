@@ -57,38 +57,42 @@
         loading.style.display = "block";
         googleBtn.disabled = true;
 
-        // আপনার সঠিক গিটহাব পেজ লিঙ্ক (ckart-3.0 ফোল্ডার সহ)
+        // গিটহাব পেজেস-এর সঠিক পাথ নিশ্চিত করা
         const redirectUrl = 'https://sarifuddinmondal.github.io/ckart-3.0/index.html';
 
         try {
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: redirectUrl,
                     queryParams: {
-                        prompt: 'select_account' // এটি ইউজারকে বারবার অ্যাকাউন্ট সিলেক্ট করার সুযোগ দেয়
+                        prompt: 'select_account'
                     }
                 }
             });
 
             if (error) throw error;
         } catch (error) {
+            console.error("Login Error:", error.message);
             alert("লগইন এরর: " + error.message);
             loading.style.display = "none";
             googleBtn.disabled = false;
         }
     }
 
-    // অলরেডি লগইন থাকলে চেক করা
+    // সেশন চেক এবং অটো-রিডাইরেক্ট
     async function checkUser() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+            // যদি ইউজার অলরেডি লগইন থাকে, তাকে ইন্ডেক্স পেজে পাঠিয়ে দেবে
             window.location.href = "index.html";
         }
     }
 
     googleBtn.addEventListener('click', handleGoogleLogin);
-    window.onload = checkUser;
+    
+    // পেজ লোড হওয়ার সময় ইউজার চেক করা
+    window.addEventListener('DOMContentLoaded', checkUser);
 </script>
 
 </body>
