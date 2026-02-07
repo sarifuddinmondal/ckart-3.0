@@ -77,7 +77,7 @@
 
         <div class="nav-actions" id="navActions">
             <a href="login.html"><i class="fas fa-user-circle"></i>লগইন</a>
-            <a href="#"><i class="fas fa-shopping-basket"></i>কার্ট</a>
+            <a href="catbag.html"><i class="fas fa-shopping-basket"></i>কার্ট</a>
         </div>
     </div>
 
@@ -102,7 +102,7 @@
 
     let allProducts = [];
 
-    // ১. ইউজার সেশন চেক করা (গুগল লগইন ডাটা ডিসপ্লে)
+    // ১. ইউজার সেশন চেক করা
     async function checkUser() {
         const { data: { session } } = await supabase.auth.getSession();
         const navActions = document.getElementById('navActions');
@@ -115,7 +115,7 @@
                     <span>প্রোফাইল</span>
                 </div>
                 <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i>আউট</a>
-                <a href="#"><i class="fas fa-shopping-basket"></i>কার্ট</a>
+                <a href="catbag.html"><i class="fas fa-shopping-basket"></i>কার্ট</a>
             `;
         }
     }
@@ -148,12 +148,12 @@
         }
     }
 
-    // ৪. প্রোডাক্ট ডিসপ্লে ফাংশন (Price & Discount logic সহ)
+    // ৪. প্রোডাক্ট ডিসপ্লে ফাংশন
     function displayProducts(list) {
         const grid = document.getElementById('productGrid');
         
         if (list.length === 0) {
-            grid.innerHTML = "<p style='text-align:center; width:100%; grid-column: 1/-1;'>কোনো প্রোডাক্ট খুঁজে পাওয়া যায়নি।</p>";
+            grid.innerHTML = "<p style='text-align:center; width:100%; grid-column: 1/-1;'>কোনো প্রোডাক্ট খুঁজে পাওয়া যায়নি।</p>";
             return;
         }
 
@@ -176,7 +176,7 @@
                             ${disc > 0 ? `<span class="old-price">₹${mrp}</span>` : ''}
                         </div>
                     </div>
-                    <button class="btn-add" onclick="addToCart('${item.name}')">
+                    <button class="btn-add" onclick='addToCart(${JSON.stringify(item)})'>
                         <i class="fas fa-cart-plus"></i> Add to Bag
                     </button>
                 </div>
@@ -184,7 +184,30 @@
         }).join('');
     }
 
-    // ৫. সার্চ লজিক
+    // ৫. কার্ট লজিক (Local Storage ব্যবহার করে)
+    window.addToCart = (product) => {
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        
+        // চেক করা হচ্ছে প্রোডাক্টটি আগে থেকেই কার্টে আছে কিনা
+        const existingItem = cart.find(item => item.id === product.id);
+        
+        if (existingItem) {
+            existingItem.qty += 1;
+        } else {
+            cart.push({
+                id: product.id,
+                name: product.name,
+                price: product.mrp || product.price,
+                image_url: product.image_url,
+                qty: 1
+            });
+        }
+        
+        localStorage.setItem('cart', JSON.stringify(cart));
+        alert(product.name + " কার্টে যোগ করা হয়েছে!");
+    };
+
+    // ৬. সার্চ লজিক
     document.getElementById('searchInput').addEventListener('input', (e) => {
         const term = e.target.value.toLowerCase();
         const filtered = allProducts.filter(p => 
@@ -194,7 +217,7 @@
         displayProducts(filtered);
     });
 
-    // ৬. ক্যাটাগরি ফিল্টার
+    // ৭. ক্যাটাগরি ফিল্টার
     window.filterCat = (cat, btn) => {
         document.querySelectorAll('.category-bar span').forEach(s => s.classList.remove('active'));
         btn.classList.add('active');
@@ -207,9 +230,7 @@
         }
     };
 
-    window.addToCart = (name) => alert(name + " কার্টে যোগ করা হয়েছে!");
-
-    // ইনিশিয়াল লোড
+    // ইনিশিয়াল কল
     checkUser();
     loadProducts();
 </script>
