@@ -6,39 +6,94 @@
     <title>CKART - Premium Shopping</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --primary: #764ba2; --secondary: #667eea; --bg: #f8f9fa; --white: #ffffff; }
-        body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg); margin: 0; }
-
-        /* Navbar & Search Bar */
-        header { background: var(--white); box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
-        .nav-container { max-width: 1200px; margin: 0 auto; padding: 10px 20px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; }
-        .logo { font-size: 28px; font-weight: 800; color: var(--primary); text-decoration: none; letter-spacing: 1px; }
-        
-        .search-box { flex: 1; min-width: 300px; margin: 10px 20px; position: relative; }
-        .search-box input { width: 100%; padding: 12px 20px; border: 2px solid #eee; border-radius: 25px; outline: none; transition: 0.3s; font-size: 15px; }
-        .search-box input:focus { border-color: var(--primary); }
-
-        .nav-actions { display: flex; align-items: center; gap: 20px; }
-        .nav-actions a { text-decoration: none; color: #444; font-weight: 600; display: flex; flex-direction: column; align-items: center; font-size: 12px; cursor: pointer; }
-        .nav-actions i { font-size: 20px; margin-bottom: 3px; color: var(--primary); }
-        .user-img { width: 28px; height: 28px; border-radius: 50%; margin-bottom: 3px; border: 1px solid var(--primary); }
-
-        /* Category Bar */
-        .category-bar { background: var(--white); padding: 10px 0; border-top: 1px solid #eee; overflow-x: auto; white-space: nowrap; text-align: center; }
-        .category-bar span { padding: 8px 18px; margin: 0 5px; background: #f0f0f0; border-radius: 20px; font-size: 14px; cursor: pointer; transition: 0.3s; display: inline-block; }
-        .category-bar span:hover, .category-bar span.active { background: var(--primary); color: white; }
-
-        /* Product Grid */
+        :root { --primary: #764ba2; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; }
+        header { background: white; padding: 15px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        .nav-actions { display: flex; gap: 20px; align-items: center; }
+        .user-img { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--primary); }
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
-        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .product-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; border: 1px solid #eee; }
+        .img-container { width: 100%; height: 200px; background: #f9f9f9; }
+        .img-container img { width: 100%; height: 100%; object-fit: cover; }
+        .info { padding: 15px; }
+        .price { font-size: 18px; font-weight: bold; color: #2ecc71; }
+        .btn-add { width: 100%; padding: 10px; background: var(--primary); color: white; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-        /* Product Card */
-        .product-card { background: var(--white); border-radius: 15px; overflow: hidden; transition: 0.3s; position: relative; border: 1px solid #eee; }
-        .product-card:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .badge { position: absolute; top: 10px; left: 10px; background: #ff4757; color: white; padding: 4px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; z-index: 5; }
-        .img-container { width: 100%; height: 220px; overflow: hidden; background: #fdfdfd; }
-        .product-card img { width: 100%; height: 100%; object-fit: cover; }
+<header>
+    <div style="font-size: 24px; font-weight: bold; color: var(--primary);">CKART</div>
+    <div class="nav-actions" id="navActions">
+        <a href="login.html" style="text-decoration:none; color:#444;"><i class="fas fa-user-circle"></i> লগইন</a>
+    </div>
+</header>
 
-        .product-info { padding: 15px; text-align: center; }
-        .product-info h3 { font-size: 16px; margin: 5px 0; color: #333; height: 40px; overflow: hidden; }
-        .
+<div class="container">
+    <div id="loading" style="text-align:center; padding:50px;">
+        <i class="fas fa-spinner fa-spin fa-2x"></i><br>লোড হচ্ছে...
+    </div>
+    <div class="product-grid" id="productGrid"></div>
+</div>
+
+<script type="module">
+    import { supabase } from './supabaseClient.js';
+
+    // ১. ইউজার সেশন চেক করা
+    async function checkUser() {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+            const user = session.user;
+            document.getElementById('navActions').innerHTML = `
+                <img src="${user.user_metadata.avatar_url}" class="user-img">
+                <span>${user.user_metadata.full_name.split(' ')[0]}</span>
+                <button onclick="signOut()" style="border:none; background:none; color:red; cursor:pointer;">আউট</button>
+            `;
+        }
+    }
+
+    window.signOut = async () => {
+        await supabase.auth.signOut();
+        location.reload();
+    }
+
+    // ২. প্রোডাক্ট লোড করা
+    async function loadProducts() {
+        const grid = document.getElementById('productGrid');
+        const loader = document.getElementById('loading');
+
+        try {
+            const { data, error } = await supabase.from('products').select('*');
+            if (error) throw error;
+
+            if (data.length === 0) {
+                grid.innerHTML = "<p>কোনো প্রোডাক্ট পাওয়া যায়নি।</p>";
+            } else {
+                grid.innerHTML = data.map(item => `
+                    <div class="product-card">
+                        <div class="img-container">
+                            <img src="${item.image_url || 'https://via.placeholder.com/200'}" alt="product">
+                        </div>
+                        <div class="info">
+                            <h3 style="font-size:16px; margin:10px 0;">${item.name}</h3>
+                            <div class="price">₹${item.mrp || item.price || 0}</div>
+                        </div>
+                        <button class="btn-add">Add to Bag</button>
+                    </div>
+                `).join('');
+            }
+        } catch (err) {
+            console.error("Error:", err.message);
+            grid.innerHTML = "<p>ডাটা লোড করতে সমস্যা হচ্ছে।</p>";
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    checkUser();
+    loadProducts();
+</script>
+
+</body>
+</html>
